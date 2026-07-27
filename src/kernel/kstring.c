@@ -35,7 +35,7 @@ void *memcpy(void *restrict dest, const void *restrict src, const size_t n)
 	unsigned const char *source = src;
 	size_t remaining = 0;
 
-	// forward
+	x86_cld();
 	rep_movsb(destination, source, n, &remaining);
 
 	return dest;
@@ -77,7 +77,7 @@ void *memset(void *s, const int c, const size_t n)
 	unsigned char *str = s;
 	size_t remaining = 0;
 
-	// forward
+	x86_cld();
 	rep_stosb(str, c, n, &remaining);
 
 	return s;
@@ -156,7 +156,7 @@ char *strchr(const char *s, const int c)
 	size_t remaining = 0;
 	unsigned char *p = (unsigned char *)s;
 
-	// forward
+	x86_cld();
 	unsigned char *end = repne_scasb(p,
 	                                 (unsigned char)c,
 	                                 strlen(s) + 1,
@@ -173,11 +173,13 @@ char *strrchr(const char *s, const int c)
 	const size_t strsz = strlen(s);
 	unsigned char *p = (unsigned char *)s;
 
-	// backward
+	x86_std();
 	unsigned char *end = repne_scasb(p + strsz,
 	                                 (unsigned char)c,
 	                                 strsz + 1,
 	                                 &remaining);
+	x86_cld(); // I *think* this needs to be cleared.
+
 	if (remaining != 0)
 		return (char *)(end + 1);
 	return NULL;
@@ -189,7 +191,7 @@ char *strchrnul(const char *s, const int c)
 	size_t remaining = 0;
 	unsigned char *p = (unsigned char *)s;
 
-	// forward
+	x86_cld();
 	unsigned char *end = repne_scasb(p,
 	                                 (unsigned char)c,
 	                                 strlen(s) + 1,
