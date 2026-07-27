@@ -1,15 +1,7 @@
+#include "macros.h"
+
 .code64
 
-.macro mpush regs:vararg
-        .irp reg,\regs
-                push    \reg
-        .endr
-.endm
-.macro mpop regs:vararg
-        .irp reg,\regs
-                pop     \reg
-        .endr
-.endm
 .macro ISR_NOERR irq
         .global x64_ISR\irq
         .type x64_ISR\irq, @function
