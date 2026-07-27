@@ -1,3 +1,7 @@
+// this file was mostly from a guide, thank you nanobyte.
+// but it is not in use anymore. it just serves as a reference
+// to how a fat12 fs driver using bios interrupts should work.
+
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>

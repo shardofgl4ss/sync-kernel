@@ -8,7 +8,7 @@ That being said...
 # Compiling
 Required tools:
 
->x86_64-elf cross compiler
+>x86_64-elf cross compiler (GCC)
 
 >mtools (for boot sector)
 
