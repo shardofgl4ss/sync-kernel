@@ -17,15 +17,15 @@
  * ------------------------------------------------------------------------Sync- */
 
 
-_CTYPE bool isupper(u8 c) { return c >= 'A' && c <= 'Z'; }
-_CTYPE bool islower(u8 c) { return c >= 'a' && c <= 'z'; }
-_CTYPE bool isdigit(u8 c) { return c >= '0' && c <= '9'; }
-_CTYPE bool isblank(u8 c) { return c == ' ' || c == '\t'; }
-_CTYPE bool isspace(u8 c) { return c == ' ' || (c >= '\t' && c <= '\r'); }
-_CTYPE bool iscntrl(u8 c) { return c < 0x20 || c == 0x7f; }
+_CTYPE bool isupper(const u8 c) { return c >= 'A' && c <= 'Z'; }
+_CTYPE bool islower(const u8 c) { return c >= 'a' && c <= 'z'; }
+_CTYPE bool isdigit(const u8 c) { return c >= '0' && c <= '9'; }
+_CTYPE bool isblank(const u8 c) { return c == ' ' || c == '\t'; }
+_CTYPE bool isspace(const u8 c) { return c == ' ' || (c >= '\t' && c <= '\r'); }
+_CTYPE bool iscntrl(const u8 c) { return c < 0x20 || c == 0x7f; }
 
 
-_CTYPE bool ispunct(u8 c)
+_CTYPE bool ispunct(const u8 c)
 {
 	return (c >= '!' && c <= '/') ||
 	       (c >= ':' && c <= '@') ||
@@ -35,15 +35,15 @@ _CTYPE bool ispunct(u8 c)
 
 
 
-_CTYPE bool isalpha(u8 c) { return islower(c) || isupper(c); }
-_CTYPE bool isalnum(u8 c) { return isalpha(c) || isdigit(c); }
-_CTYPE bool isgraph(u8 c) { return isalnum(c) || ispunct(c); }
-_CTYPE bool isprint(u8 c) { return isgraph(c) || c == ' '; }
+_CTYPE bool isalpha(const u8 c) { return islower(c) || isupper(c); }
+_CTYPE bool isalnum(const u8 c) { return isalpha(c) || isdigit(c); }
+_CTYPE bool isgraph(const u8 c) { return isalnum(c) || ispunct(c); }
+_CTYPE bool isprint(const u8 c) { return isgraph(c) || c == ' '; }
 
 
 
 // the reject child of being 8 characters long instead of 7.
-_CTYPE bool isxdigit(u8 c)
+_CTYPE bool isxdigit(const u8 c)
 {
 	return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }

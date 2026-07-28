@@ -3,100 +3,189 @@
 //
 
 #include "vga.h"
+#include "kctype.h"
 #include "kstring.h"
 #include "ktypes.h"
 
-#define VGA_WIDTH	80
-#define VGA_HEIGHT	25
-#define VGA_MEMORY	0xb8000
+// fg | (bg << 4), sets the kernel tty? init color.
+static constexpr enum vga_color VGA_INIT_COLOR = (VGA_COLOR_LIGHT_CYAN | (VGA_COLOR_BLACK << 4));
+static constexpr int VGA_TABSTOP = 8;
 
-struct vga_terminal {
-	size_t term_row;
-	size_t term_col;
-	u8 term_color;
-	volatile u16 *term_buffer;
-};
+static constexpr int VGA_WIDTH = 80;
+static constexpr int VGA_HEIGHT = 25;
+static constexpr int VGA_CELLS = VGA_WIDTH * VGA_HEIGHT;
 
-__attribute__((pure))
-static inline u8 vga_entry_color(const enum vga_color fg, const enum vga_color bg)
+// should only store enough for one line to make it easier.
+static constexpr int VGA_WBUF_SIZE = VGA_WIDTH;
+static constexpr int VGA_MAX_STRING_SIZE = VGA_CELLS;
+
+static_assert(VGA_TABSTOP % 2 == 0 && VGA_TABSTOP <= VGA_WIDTH,
+               __FILE__ ": VGA_TABSTOP invalid\n");
+
+extern u8 _vga_start;	// linker symbols. probably don't need em.
+extern u8 _vga_end;
+
+
+typedef struct vga_char {
+	u8 ch;
+	u8 color;
+} __attribute__((packed)) vga_cell_t;
+
+static struct kvga_term {
+	int cy;	// current, not cursor
+	int cx;
+	int color;
+} kvga;	// only vga driver should be able to access this and VGA_OUT.
+
+
+__attribute__((section(".vga")))
+volatile static vga_cell_t VGA_OUT[VGA_CELLS];
+
+
+static inline enum vga_color vga_set_cell_color(const enum vga_color fg,
+                                                const enum vga_color bg)
 {
-	return fg | bg << 4;
+	return (fg | (bg << 4));
 }
 
-__attribute__((pure))
-static inline u16 vga_entry(const u8 c, const u8 color)
+
+/* this just writes where you specify */
+static void vga_write_cell_at(const vga_cell_t cell, const int x, const int y)
 {
-	return (u16)c | (u16)color << 8;
+	const int vga_idx = y * VGA_WIDTH + x;
+	VGA_OUT[vga_idx] = cell;
 }
 
- static struct vga_terminal terminal = {
-	.term_row = 0,
-	.term_col = 0,
-	.term_color = 0,
-	.term_buffer = (u16 *)VGA_MEMORY,
-};
 
-
-void terminal_init(void)
+/* this does the actual positioning logic */
+static void vga_write_cell(vga_cell_t cell)
 {
-	terminal.term_color = vga_entry_color(VGA_COLOR_GREEN, VGA_COLOR_BLACK);
+	if (isprint(cell.ch)) {
+		vga_write_cell_at(cell, kvga.cx, kvga.cy);
 
-	for (size_t y = 0; y < VGA_HEIGHT; y++) {
-		for (size_t x = 0; x < VGA_WIDTH; x++) {
-			const size_t i = y * VGA_WIDTH + x;
-			terminal.term_buffer[i] = vga_entry(' ', terminal.term_color);
+		if (++kvga.cx >= VGA_WIDTH) {
+			if (++kvga.cy >= VGA_HEIGHT)
+				kvga.cy = 0;
+			kvga.cx = 0;
 		}
+		return;
 	}
-}
 
-void terminal_setcolor(const u8 fg, const u8 bg)
-{
-	terminal.term_color = vga_entry_color(fg, bg);
-}
-
-void terminal_put_entry_at(const char c, const u8 color, const size_t x, const size_t y)
-{
-	const size_t i = y * VGA_WIDTH + x;
-	terminal.term_buffer[i] = vga_entry(c, color);
-}
-
-void terminal_putc(const char c)
-{
-	switch (c) {
+	switch (cell.ch) {
 	case '\r':
-		terminal.term_col = 0;
-		return;
+		kvga.cx = 0;
+		break;
 	case '\n':
-		terminal.term_col = 0;
-		if (++terminal.term_row == VGA_HEIGHT)
-			terminal.term_row = 0;
-		return;
+		if (++kvga.cy >= VGA_HEIGHT)
+			kvga.cy = 0;
+		kvga.cx = 0;
+
+		break;
+	case '\t':
+		cell.ch = ' ';
+		int distance = VGA_TABSTOP - (kvga.cx % VGA_TABSTOP);
+
+		while (distance--) {
+			vga_write_cell_at(cell, kvga.cx++, kvga.cy);
+
+			if (kvga.cx >= VGA_WIDTH) {
+				if (++kvga.cy >= VGA_HEIGHT) {
+					kvga.cy = 0;
+				}
+				kvga.cx = 0;
+			}
+		}
 	default:
 		break;
 	}
-	terminal_put_entry_at(c, terminal.term_color, terminal.term_col, terminal.term_row);
+}
 
-	if (++terminal.term_col == VGA_WIDTH) {
-		terminal.term_col = 0;
-		if (++terminal.term_row == VGA_HEIGHT)
-			terminal.term_row = 0;
+
+void vga_init(void)
+{
+	static constexpr vga_cell_t ch = {.ch = ' ', .color = VGA_INIT_COLOR};
+
+	for (int i = 0; i < VGA_CELLS; i++)
+		VGA_OUT[i] = ch;
+	kvga.color = VGA_INIT_COLOR;
+}
+
+
+void vga_setcolor(const enum vga_color fg, const enum vga_color bg)
+{
+	kvga.color = vga_set_cell_color(fg, bg);
+}
+
+
+void vga_write(const char *s, int len)
+{
+	if (len == 0)
+		return;
+
+	vga_cell_t cell;
+	cell.color = kvga.color;
+
+	while (len--) {
+		cell.ch = (u8)(*(s++));
+		vga_write_cell(cell);
 	}
 }
 
-void terminal_puts(const char *restrict data)
+
+void vga_putchar(const char c)
 {
-	for (size_t i = 0; i < strlen(data); i++)
-		terminal_putc(data[i]);
+	const vga_cell_t cell = {
+		.ch    = c,
+		.color = kvga.color
+	};
+
+	vga_write_cell(cell);
 }
 
 
-void terminal_clear(void)
+void vga_puts(const char *str)
 {
-	for (size_t y = 0; y < VGA_HEIGHT; y++) {
-		for (size_t x = 0; x < VGA_WIDTH; x++) {
-			const size_t i = y * VGA_WIDTH + x;
-			terminal.term_buffer[i] = vga_entry(' ', terminal.term_color);
-		}
+	int len = strlen(str);
+
+	if (len >= VGA_MAX_STRING_SIZE) {
+		len = VGA_MAX_STRING_SIZE - 1;
 	}
+
+	vga_write(str, len);
 }
 
+
+void vga_clear(void)
+{
+	const vga_cell_t ch = {
+		.ch    = ' ',
+		.color = kvga.color
+	};
+
+	for (int i = 0; i < VGA_CELLS; i++)
+		VGA_OUT[i] = ch;
+
+	kvga.cx = 0;
+	kvga.cy = 0;
+}
+
+
+void vga_clear_line(void)
+{
+	const vga_cell_t ch = {
+		.ch    = ' ',
+		.color = kvga.color
+	};
+
+	int vga_idx = kvga.cy * VGA_WIDTH + kvga.cx;
+	int distance = VGA_WIDTH - kvga.cx;
+
+	while (distance--)
+		VGA_OUT[vga_idx++] = ch;
+}
+
+
+enum vga_color vga_get_color(void)
+{
+	return kvga.color;
+}

@@ -50,4 +50,10 @@ SECTIONS
 
         . = ALIGN(0x1000);
         _end = .;
+
+        .vga 0xb8000 (NOLOAD) : {
+                _vga_start = .;
+                *(.vga)
+                _vga_end = .;
+        }
 }

@@ -127,18 +127,18 @@ char *stpcpy(char *restrict dest, const char *restrict src)
 }
 
 
-char *strncpy(char *restrict dest, const char *restrict src, const size_t dsize)
-{
-	stpncpy(dest, src, dsize);
-	return dest;
-}
-
-
 char *strncat(char *restrict dst, const char *restrict src, const size_t ssize)
 {
 	#define strnul(s)	((s) + strlen(s))
 	stpcpy(memcpy(strnul(dst), src, strnlen(src, ssize)), "");
 	return dst;
+}
+
+
+char *strncpy(char *restrict dest, const char *restrict src, const size_t dsize)
+{
+	stpncpy(dest, src, dsize);
+	return dest;
 }
 
 

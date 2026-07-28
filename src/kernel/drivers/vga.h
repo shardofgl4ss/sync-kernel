@@ -5,8 +5,6 @@
 #ifndef KERNEL_PROJECT_VGA_H
 #define KERNEL_PROJECT_VGA_H
 
-#include "../ktypes.h"
-
 enum vga_color {
 	VGA_COLOR_BLACK = 0,
 	VGA_COLOR_BLUE = 1,
@@ -26,11 +24,33 @@ enum vga_color {
 	VGA_COLOR_WHITE = 15
 };
 
-extern void terminal_init(void);
-extern void terminal_setcolor(u8 fg, u8 bg);
-extern void terminal_putc(char c);
-extern void terminal_puts(const char *restrict data);
-extern void terminal_clear(void);
+enum vga_mode {
+	STDOUT = 1,
+	STDERR = 2 // at the moment, STDERR just makes output red lol
+};
 
+/* initializes the vga screen to nothing and sets color to VGA_INIT_COLOR */
+extern void vga_init(void);
+
+/* sets any text outputted after this is called to fg, bg */
+extern void vga_setcolor(enum vga_color fg, enum vga_color bg);
+
+/* Writes a whole string to screen */
+void vga_write(const char *s, int len);
+
+/* puts a single character on the screen */
+extern void vga_putchar(char c);
+
+/* puts a string on the screen */
+extern void vga_puts(const char *str);
+
+/* clears the entire screen */
+extern void vga_clear(void);
+
+/* clears the entire line after the cursor */
+extern void vga_clear_line(void);
+
+/* returns the current color */
+extern enum vga_color vga_get_color(void);
 
 #endif //KERNEL_PROJECT_VGA_H

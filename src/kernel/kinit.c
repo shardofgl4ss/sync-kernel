@@ -18,7 +18,7 @@ static void (*kinit_table[])(void) = {
 	clear_kernel_bss,
 	x64_isr_init,
 	idt_init,
-	terminal_init,
+	vga_init,
 };
 
 static constexpr size_t KINIT_ENTRIES = sizeof(kinit_table) / sizeof(*kinit_table);

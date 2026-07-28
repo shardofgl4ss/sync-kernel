@@ -38,7 +38,7 @@ extern char *strchrnul(const char *s, int c);
 
 
 /* returns ptr to last char, will increment *dest */
-__attribute__((always_inline, nonnull(4)))
+__attribute__((always_inline, nonnull(4), used))
 static inline unsigned char *rep_movsb(unsigned char *dest,
                                        const unsigned char *src,
                                        size_t n,
@@ -56,7 +56,7 @@ static inline unsigned char *rep_movsb(unsigned char *dest,
 
 
 /* returns ptr to last char, will increment *dest */
-__attribute__((always_inline, nonnull(4)))
+__attribute__((always_inline, nonnull(4), used))
 static inline unsigned char *repne_movsb(unsigned char *dest,
                                          const unsigned char *src,
                                          size_t n,
@@ -74,7 +74,7 @@ static inline unsigned char *repne_movsb(unsigned char *dest,
 
 
 /* returns ptr to last char, will increment *dest */
-__attribute__((always_inline, nonnull(4)))
+__attribute__((always_inline, nonnull(4), used))
 static inline unsigned char *rep_stosb(unsigned char *dest,
                                        const unsigned char c,
                                        size_t n,
@@ -91,7 +91,7 @@ static inline unsigned char *rep_stosb(unsigned char *dest,
 }
 
 
-__attribute__((always_inline, nonnull(4)))
+__attribute__((always_inline, nonnull(4), used))
 static inline unsigned char *repne_stosb(unsigned char *dest,
                                          const unsigned char c,
                                          size_t n,
@@ -108,7 +108,7 @@ static inline unsigned char *repne_stosb(unsigned char *dest,
 }
 
 
-__attribute__((always_inline, nonnull(4)))
+__attribute__((always_inline, nonnull(4), used))
 static inline unsigned char *repne_scasb(unsigned char *p,
                                          unsigned char v,
                                          size_t n,
@@ -125,7 +125,7 @@ static inline unsigned char *repne_scasb(unsigned char *p,
 }
 
 
-__attribute__((always_inline, nonnull(4)))
+__attribute__((always_inline, nonnull(4), used))
 static inline unsigned char *rep_scasb(unsigned char *p,
                                        unsigned char v,
                                        size_t n,
@@ -142,10 +142,10 @@ static inline unsigned char *rep_scasb(unsigned char *p,
 }
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline void x86_cld(void) { __asm__ volatile ("cld" ::: "cc"); }
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline void x86_std(void) { __asm__ volatile ("std" ::: "cc"); }
 
 

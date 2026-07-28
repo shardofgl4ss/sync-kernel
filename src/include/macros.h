@@ -17,7 +17,6 @@
 .endm
 
 
-.altmacro
 .macro defstr name,text
         \name:  .asciz \text
         .set    \name\()_len, . - \name - 1

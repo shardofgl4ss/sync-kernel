@@ -4,7 +4,7 @@
 
 #include "isr.h"
 #include "idt.h"
-#include "irq.h"
+#include "stdio.h"
 #include "vga.h"
 
 extern void *isr_table[256];
@@ -37,6 +37,6 @@ void x64_isr_init(void)
 
 void x64_isr_handler(isr_regs *regs)
 {
-	terminal_setcolor(VGA_COLOR_MAGENTA, VGA_COLOR_BLACK);
-	terminal_puts("interrupt received");
+	vga_setcolor(VGA_COLOR_MAGENTA, VGA_COLOR_BLACK);
+	puts("interrupt received");
 }
