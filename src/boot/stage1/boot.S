@@ -53,6 +53,7 @@ ebr_system_id:                  .ascii "FAT12   "   # 8 bytes only
 #define KERNEL_LOAD_OFFSET     0
 
 start:
+        cli
         # segment setup
         xorw    %ax, %ax
 
@@ -201,7 +202,6 @@ start:
 .Lkernel_read_fini:
         movb    (ebr_drive_number), %dl
 
-        cli
         movw    $KERNEL_LOAD_SEGMENT, %ax
         mov     %ax, %ds
         mov     %ax, %es
@@ -351,7 +351,7 @@ reset_disk:
 
 
 
-msg_boot_loading:       .asciz "Loading..."
+msg_boot_loading:       .asciz "Loading kernel..."
 emsg_kernel_not_found:  .asciz "NO KERNEL"
 emsg_disk_read:         .asciz "DISK ERR"
 kernel_name:            .ascii "KERNEL  BIN"

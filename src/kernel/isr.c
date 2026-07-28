@@ -4,6 +4,8 @@
 
 #include "isr.h"
 #include "idt.h"
+#include "irq.h"
+#include "panic.h"
 #include "stdio.h"
 #include "vga.h"
 
@@ -38,5 +40,7 @@ void x64_isr_init(void)
 void x64_isr_handler(isr_regs *regs)
 {
 	vga_setcolor(VGA_COLOR_MAGENTA, VGA_COLOR_BLACK);
-	puts("interrupt received");
+	puts("interrupt received while interrupts were disabled, dying.\n");
+
+	panic();
 }

@@ -1,8 +1,5 @@
 .extern kernel_main
-.extern clear_kernel_bss
-
 .type kernel_main, @function
-.type clear_kernel_bss, @function
 
 .extern kstack_top
 .type kstack_top, @object
@@ -20,17 +17,9 @@
         .global long_mode_start
 
 start:
-        cli
-
-        xor     %ax, %ax
-        mov     %ax, %ds
-        mov     %ax, %es
-        mov     %ax, %ss
-
-enter_prot:
         # This instruction gets truncated into 16 bit by default,
         # despite needing to be a 32 bit address. addr32 overrides this.
-        addr32  lgdt    GDT_descriptor
+        addr32  lgdt    (GDT_descriptor - start)
         movl    %cr0, %eax
         orl     $1, %eax
         movl    %eax, %cr0
@@ -38,7 +27,7 @@ enter_prot:
         ljmpl   $CODE_SEGMENT, $prot_mode_start
 .code32
 prot_mode_start:
-        movw    $0x10, %ax
+        movw    $DATA_SEGMENT, %ax
         movw    %ax, %ds
         movw    %ax, %es
         movw    %ax, %fs
