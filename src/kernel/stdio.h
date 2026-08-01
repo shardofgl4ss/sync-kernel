@@ -5,7 +5,7 @@
 #ifndef KERNEL_PROJECT_STDIO_H
 #define KERNEL_PROJECT_STDIO_H
 
-#include "ktypes.h"
+#include "types.h"
 
 extern void putchar(u8 c);
 extern void puts(const char *str);

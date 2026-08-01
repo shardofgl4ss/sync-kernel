@@ -5,7 +5,7 @@
 #ifndef KERNEL_PROJECT_KSTRING_H
 #define KERNEL_PROJECT_KSTRING_H
 
-#include "ktypes.h"
+#include "types.h"
 
 extern size_t strlen(const char *str);
 

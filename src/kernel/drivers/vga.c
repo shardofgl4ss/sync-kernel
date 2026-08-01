@@ -5,7 +5,7 @@
 #include "vga.h"
 #include "kctype.h"
 #include "kstring.h"
-#include "ktypes.h"
+#include "../../include/types.h"
 
 // fg | (bg << 4), sets the kernel tty? init color.
 static constexpr enum vga_color VGA_INIT_COLOR = (VGA_COLOR_LIGHT_CYAN | (VGA_COLOR_BLACK << 4));

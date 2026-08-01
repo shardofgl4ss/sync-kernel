@@ -3,7 +3,7 @@
 //
 
 #include "idt.h"
-#include "ktypes.h"
+#include "types.h"
 
 #define EXTRACT_LOW_16(x)       ((u16)((usize)(x) & 0xFFFF))
 #define EXTRACT_MID_16(x)       ((u16)(((usize)(x) >> 16) & 0xFFFF))

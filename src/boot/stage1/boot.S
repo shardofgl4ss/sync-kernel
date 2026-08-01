@@ -3,368 +3,382 @@
 .code16
 .section .text
         .global __start
-
-__start:
-        jmp.s    start
+fat_jmp:
+        jmp.s __start
         nop
 
-fdb_oem:                        .ascii "MSWIN4.1" # 8 bytes only
-fdb_bytes_per_sector:           .word 512
-fdb_sectors_per_cluster:        .byte 1
-fdb_reserved_sectors:           .word 1
-fdb_fat_count:                  .byte 2
-fdb_dentries:                   .word 0xe0
-fdb_total_sectors:              .word 2880
-fdb_media_descriptor_table:     .byte 0xf0
-fdb_sectors_per_fat:            .word 9
-fdb_sectors_per_track:          .word 18
-fdb_heads:                      .word 2
-fdb_hidden:                     .long 0
-fdb_large:                      .long 0
 
-ebr_drive_number:               .byte 0 # 0 = floppy, 0x80 = hdd but dont change it
-                                .byte 0
-ebr_signature:                  .byte 0x29
-ebr_volume_id:                  .byte 0x12, 0x34, 0x56, 0x78
-ebr_volume_label:               .ascii "SYN_FLOPPY " # 11 bytes only
-ebr_system_id:                  .ascii "FAT12   "   # 8 bytes only
+# bpb:    .space 59 # FAT12 size
+bpb:    .space 87 # FAT32 size
 
-#define BIOS_VIDEO_PRINT        0x0e
-#define BIOS_DISKIO_DPARAMS     0x08
 
-#define BIOS_VIDEO              0x10
+
+
 # Prints character to screen in TTY mode.
-# %ah reg must be $0x0e, 
-# %al to the ascii character, 
-# %bh to the page number
-# %bl to foreground pix color (graphics mode only)
+# %ah reg must be $0x0e
+# %al to the ascii character
+.set BIOS_INT_video,    0x10
+.set BIOS_INT_check,    0x11
+.set BIOS_INT_memsize,  0x12
+.set BIOS_INT_disk,     0x13
 
-#define BIOS_EQUIPCHK           0x11
-#define BIOS_MEMSZ              0x12
-#define BIOS_DISKIO             0x13
-#define BIOS_SERIALCOMM         0x14
-#define BIOS_CASETTE            0x15
-#define BIOS_KEYBOARDIO         0x16
+### These are offsets. BS = Boot Sector, BPB = Bios Parameter Block
+
+ # Boot jump instruction.
+.set BS_jmpBoot, 0         ## 3 bytes
+ # This can be any string.
+.set BS_OEMName, 3         ## 8 bytes (string)
+# Count of bytes per sector. 512, 1024, 2048 or 4096. 512 is used.
+.set BPB_BytsPerSec, 11    ## 2 bytes
+# Number of sectors per allocation unit. 1, 2, 4, 8, 16, 32, 64, or 128 are valid.
+# If (BPB_BytsPerSec * BPB_SecPerClus) > 32KiB, the behavior is undefined for most drivers.
+.set BPB_SecPerClus, 13    ## 1 byte
+# Number of reserved sectors in reserved region. It should not be zero.
+# For FAT12/FAT16. this is usually 1, but for FAT32 this is *usually* 32.
+.set BPB_ResvdSecCnt, 14   ## 2 bytes
+# How many FAT structures there are on the disk. Should always contain at least 2.
+.set BPB_NumFATs, 16       ## 1 byte
+# For FAT12/16, this contains the count of 32-byte dentries in root.
+# For FAT32, this should be set to zero.
+.set BPB_RootEntCnt, 17    ## 2 bytes
+# This field should be set to zero for FAT32. If this is zero, BPB_TotSec32 needs to be > 0
+.set BPB_TotSec16, 19      ## 2 bytes
+# This is no longer used. But it is the value for nonremovable media, and is often 0xF8 or 0xF0
+.set BPB_Media, 21         ## 1 byte
+# BPB_FATSz32 should be used instead for FAT32.
+.set BPB_FATSz16, 22       ## 2 bytes
+# Sectors per track. For int 0x13. Only for hard disks that are visible on int 0x13.
+.set BPB_SecPerTrk, 24     ## 2 bytes
+# For int 0x13, head count. A 1.44mb floppy is usually 2.
+.set BPB_NumHeads, 26      ## 2 bytes
+# Hidden sector count preceding the partition after the current.
+.set BPB_HiddSec, 28       ## 4 bytes
+# This includes the count of all 4 regions of the disk volume.
+.set BPB_TotSec32, 32      ## 4 bytes
+
+# FAT12/16 : FAT32 diversion point. The following do not exist on FAT12/16.
+
+# FAT32 32-bit count of sectors occupied by one FAT.
+# Aka, sectors per FAT.
+.set BPB_FATSz32, 36       ## 4 bytes
+# Bits 0-3: Zero based number of active FAT, valid only when mirroring is disabled
+# Bits 4-6: Reserved
+# Bit 7: 0 means the FAT is mirrored at runtime. 1 means only 1 is active, referenced in bits 0-3
+# Bits 8-15: Reserved
+.set BPB_ExtFlags, 40      ## 2 bytes
+# Version of the FAT filesystem.
+# High byte is major rev, low byte is minor rev.
+.set BPB_FSVer, 42         ## 2 bytes
+# The cluster number of the first cluster of root dentry.
+# Usually, this is at 2.
+.set BPB_RootClus, 44      ## 4 bytes
+# Sector number of the FSINFO structure in reserved area of the disk.
+.set BPB_FSInfo, 48        ## 2 bytes
+# If this isn't zero then the sector number in the reserved area is a copy of the boot record.
+# Is usually 6.
+.set BPB_BkBootSec, 50     ## 2 bytes
+# Reserved for future expansion, should be zero.
+.set BPB_Reserved, 52      ## 12 bytes
+# int 0x13 drive number. Usually 0x80
+.set BS_DrvNum, 64         ## 1 byte
+# Reserved. Should always be set to zero
+.set BS_Reserved1, 65      ## 1 byte
+
+# Extended boot signature, 0x29. Indicates the following 3 field are present.
+.set BS_BootSig, 66        ## 1 byte
+# Volume serial number. With BS_VolLab, volume tracking on removable media is possible.
+# It also allows drivers to detect the wrong disk is inserted. 
+# The ID is usually just obtained by combining the current date and time into a 32 bit val.
+.set BS_VolID, 67          ## 4 bytes
+# Should match the 11 byte volume label in the root directory.
+.set BS_VolLab, 71         ## 11 bytes
+# Usually irrelevant, but often is set to the FAT type, ie "FAT     "
+.set BS_FilSysType, 82     ## 8 bytes
 
 
-#define KCLUSTER_OFFSET          31
 
-#define KERNEL_LOAD_SEGMENT    0x1000
-#define KERNEL_LOAD_OFFSET     0
+### FAT dentry structure
+.set DIR,               0       ## 32 bytes each
+.set DIR_Name,          0       ## 11 bytes
+.set DIR_Attr,          1       ## byte
+.set DIR_FstClusHI,     20      ## word
+.set DIR_FstClusLO,     26      ## word
+.set DIR_FileSize,      28      ## long
+### (only the important parts)
+.set DIR_size, 0x20
 
-start:
+
+
+
+# In real mode, only certain registers are allowed for memory indexing
+# Base: %bx, %bp
+# Index: %si, %di
+# All base addressing use %ds segment register unless %bp is used,
+# in which case it will be %ss.
+
+__start:
+        # disk number is in %dl
         cli
-        # segment setup
-        xorw    %ax, %ax
 
-        movw    %ax, %ds
-        movw    %ax, %es
-
-        # stack setup
-        movw    %ax, %ss
+        xor     %ax, %ax
+        mov     %ax, %ds
+        mov     %ax, %es
+        mov     %ax, %ss
         movw    $_begin, %sp
 
-        ljmp    $0x0000, $.Lafter
-.Lafter:
-        movb    %dl, (ebr_drive_number)
+        ljmp    $0x0000, $fix_offset_start
+fix_offset_start:
+        mov     %sp, %bp
+        push    %dx     # has %dl as drive number
 
-        leaw    msg_boot_loading, %si
-        call    puts
+        # this section gets the anchor to the whole fs. Everything uses it.
+first_datasector:
+        movl    $_begin, %ebx
 
-        # time to figure out disk information
-        # just in case the structure above
-        # was corrupted. just in case.
-        push    %es
-        mov     $BIOS_DISKIO_DPARAMS, %ah
-        stc
-        int     $BIOS_DISKIO
-        jc      floppy_err
+        # FstDSec = ResvdSecCnt + (NumFATs * FatSz)
+        # FatSz could be either FatSz16 or FatSz32,
+        # so a quick test if FATSz16 is zero or not
+        # will tell you. If 16 is empty, 32 shouln't be.
 
-        pop     %es
-        andb    $0x3f, %cl
-        xor     %ch, %ch
-        movw    %cx, (fdb_sectors_per_track)
-
-        inc     %dh
-        movb    %dh, (fdb_heads)
-
-        # getting LBA of root (reserved + fat count * sectors per fat)
-        movw    (fdb_sectors_per_fat), %ax
-        movb    (fdb_fat_count), %bl
-        xor     %bh, %bh
-        mul     %bx
-
-        addw    (fdb_reserved_sectors), %ax # LBA of root acquired
-        push    %ax
-
-        # getting size of root dentry (32 * dentries) / bytes per sector
-        movw    (fdb_sectors_per_fat), %ax
-        shl     $5, %ax
-        xor     %dx, %dx
-        divw    (fdb_bytes_per_sector)
-
-        test    %dx, %dx
-        jz      .Lafter_root
-        inc     %ax # if div remainder != 0, sectors are partially full
-.Lafter_root:
-        
-        # tiem tew wead woot uwu
-        mov     %al, %cl        # size of root in cl
-        pop     %ax             # LBA of root dentry in ax
-        
-        movb    (ebr_drive_number), %dl
-        leaw    (buffer), %bx   # es:bx, buffer
-        call    read_disk
-
-        push    %cx
-        xor     %bx, %bx
-        leaw    (buffer), %di
-.Lfind_kernel: 
-        lea     kernel_name, %si
-        mov     $kernel_name_len, %cx
-        push    %di
-        repe    cmpsb
-        pop     %di
-        je      .Lfound_kernel
-
-        add     $0x20, %di      # 32 is the size of a fat12 dentry
-        inc     %bx
-
-        cmpw    (fdb_dentries), %bx
-        jl      .Lfind_kernel
-
-        jmp     kernel_not_found_err
-
-.Lfound_kernel:
-        # %di should still have the dentry addr
-        movw    0x1a(%di), %ax
-        movw    %ax, (kcluster)
-
-        # popcorn kernel read tiem
-        movw    (fdb_reserved_sectors), %ax
-        leaw    (buffer), %bx
-        movb    (fdb_sectors_per_fat), %cl
-        movb    (ebr_drive_number), %dl
-        call    read_disk
-
-        # FAT chain processing.
-        movw    $KERNEL_LOAD_SEGMENT, %bx
-        movw    %bx, %es
-        mov     $KERNEL_LOAD_OFFSET, %bx
-
-.Lload_kernel:
-
-        # start_sector = reserved + fats + root dentry size
-        # first cluster is (kcluster - 2) * sectors per cluster + start_sector
-        movw    (kcluster), %ax
-        addw    $KCLUSTER_OFFSET, %ax
-
-        movb    $1, %cl
-        movb    (ebr_drive_number), %dl
-        call    read_disk
-
-        addw    (fdb_bytes_per_sector), %bx
-        jnc     1f
-
-        push    %ax
-        movw    %es, %ax
-        addw    $0x1000, %ax
-        movw    %ax, %es
-        pop     %ax
+        movzwl  BPB_FATSz16(%bx), %eax
+        test    %eax, %eax
+        jnz     1f
+        movl    BPB_FATSz32(%bx), %eax
 1:
 
-        movw    (kcluster), %ax
-        movw    $3, %cx
-        mul     %cx
-        mov     $2, %cx
-        div     %cx     # %ax = dentry, %dx = cluster % 2
+        movzbl  BPB_NumFATs(%bx), %edi
+        mul     %edi
+        movzwl  BPB_ResvdSecCnt(%bx), %edx
+        addl    %edx, %eax
+        movl    %eax, (FstDSec)
 
-        leaw    (buffer), %si
-        addw    %ax, %si
-        movw    %ds:(%si), %ax # dentry at index %ax
+        # now that FstDSec is acquired, lets find root with it.
+find_root:
+        movl    BPB_RootClus(%bx), %edi
+        call    clus_to_lba
+        mov     %eax, %esi
+        mov     $1, %edi
+        mov     $0, %cx
+        mov     $buffer, %dx
+        pop     %ax
+        push    %ax
+        call    read_disk_lba
 
-        or      %dx, %dx
-        jz      .Leven
+        # We have to give up %bp for now
+        movl    $buffer, %ebp
+        xor     %cx, %cx
+.Lread_dir_loop:
+        cmpb    $0x00, %ds:DIR_Name(%ebp)
+        je      not_found
+        cmpb    $0xe5, %ds:DIR_Name(%ebp)
+        je      .Lnext
+        cmpb    $0x0f, %ds:DIR_Attr(%ebp)
+        je      .Lnext
 
-.Lodd: 
-        shr     $4, %ax
-        jmp     .Lnext_cluster
-.Leven:
-        andw    $0x0FFF, %ax
-.Lnext_cluster:
+        push    %cx
+        lea     DIR_Name(%ebp), %di
+        lea     stage2_file, %si
+        mov     $stage2_file_len, %cx
+        repe    cmpsb
+        pop     %cx
+        je      load_s2
+.Lnext:
+        addl    $DIR_size, %ebp
+        inc     %cx
+        cmp     $16, %cx
+        jl      .Lread_dir_loop
+        jmp     not_found
+
+
+
+.set S2_SEGMENT, 0x1000
+.set S2_OFFSET, 0
+load_s2:
+        movzwl  BPB_BytsPerSec(%bx), %eax
+        movzbl  BPB_SecPerClus(%bx), %edi
+        mul     %edi
+        mov     %eax, %ecx
+        mov     %eax, %edi
+        movl    %ds:DIR_FileSize(%ebp), %eax
+        dec     %edi
+        add     %edi, %eax
+        div     %ecx
         
-        cmpw    $0x0FF8, %ax
-        jge     .Lkernel_read_fini
 
-        movw    %ax, (kcluster)
-        jmp     .Lload_kernel
+        # eax now has how many clusters stage2 is
+        push    %eax
+        
+        movzwl  %ds:DIR_FstClusHI(%ebp), %ecx
+        movzwl  %ds:DIR_FstClusLO(%ebp), %edi
+        shl     $0x10, %ecx
+        or      %ecx, %edi
+        ## if %edi is a weird value, its because
+        # im not ORing shifted HI onto LO, im doing LO onto shifted HI.
 
-.Lkernel_read_fini:
-        movb    (ebr_drive_number), %dl
+        call    clus_to_lba
+        mov     %eax, %esi
+        pop     %edi
+        mov     $S2_SEGMENT, %cx
+        mov     $S2_OFFSET, %dx
+        pop     %ax
+        push    %ax
+        call    read_disk_lba
 
-        movw    $KERNEL_LOAD_SEGMENT, %ax
+        movw    $S2_SEGMENT, %ax
         mov     %ax, %ds
         mov     %ax, %es
 
-        ljmp     $KERNEL_LOAD_SEGMENT, $KERNEL_LOAD_OFFSET
-
-halt:
-        cli
-        hlt
-        jmp     halt
-
-kernel_not_found_err:
-        mov     emsg_kernel_not_found, %si
-        call    puts
-        jmp     wait_key_reboot
-
-floppy_err:
-        leaw    emsg_disk_read, %si
-        call    puts
-
-wait_key_reboot:
-        xorb    %ah, %ah
-        int     $BIOS_KEYBOARDIO
-        jmp     0xFFFF
-
-
-
-# prints string to screen
-# parameters:
-#       - %ds:%si string
-# returns:
-#       - none
-puts:
-        push    %si
-        push    %ax
-.Lputs_loop:
-        lodsb
-        orb     %al, %al
-        jz      .Lputs_done
-
-        movb    $BIOS_VIDEO_PRINT, %ah
-        xorb    %bh, %bh
-        int     $BIOS_VIDEO
-
-        jmp     .Lputs_loop
-.Lputs_done:
-        pop     %ax
-        pop     %si
-        ret
-
-
-# Converts Logical Block Address to CHS
-# params:
-#       - %ax: LBA addr
-# returns:
-#       - sector number: %cx (bits 0-5)
-#       - cylinder number: %cx (bits 6-15)
-#       - head: %dh
-lba_to_chs:
-        push    %ax
-        push    %dx
-
-        xor     %dx, %dx
-        divw    (fdb_sectors_per_track)
-
-        inc     %dx # iirc, sectors count from 1, so increment by 1.
-        mov     %dx, %cx
-
-        xor     %dx, %dx
-        divw    (fdb_heads)
-
-        mov     %dl, %dh
-        mov     %al, %ch
-
-        shl     $6, %ah
-        or      %ah, %cl
-
-        pop     %ax
-        mov     %al, %dl
-        pop     %ax
-        ret
-
-
-
-
-# Reads sectors from disk.
-# parameters:
-#       - %ax: LBA
-#       - %cl: sectors to read (128 is max)
-#       - %dl: drive number
-#       - %es:%bx: output buffer
-# returns:
-#       - none
-read_disk:
-        push    %ax
-        push    %bx
-        push    %cx
-        push    %dx
-        push    %di
-
-        push    %cx
-        call    lba_to_chs
-        pop     %ax
-
-        mov     $0x02, %ah
-        mov     $3, %di
-.Lread_disk.retry:
-        pusha
-
-        stc
-        int     $BIOS_DISKIO
-        jnc     .Lread_disk.done
-
-        popa
-
-        call    reset_disk
-        dec     %di
-        test    %di, %di
-        jnz     .Lread_disk.retry
-        jmp     floppy_err
-.Lread_disk.done:
-        popa
-
-        pop     %di
         pop     %dx
-        pop     %cx
-        pop     %bx
-        pop     %ax
 
-        ret
+        ljmp    $S2_SEGMENT, $S2_OFFSET
+
+not_found:
+disk_err:
+        nop
+        hlt
+        
 
 
-# reset disk controller
-# parameters:
-#       - %dl: drive number to reset
-# returns:
+# Reads from disk via LBA into (buffer)
+# Parameters:
+#       - %ax: drive number
+#       - %edi: clusters to request
+#       - %esi: lba
+#       - %cx: segment
+#       - %dx: buffer
+# Returns:
 #       - none
-reset_disk:
-        pusha
-        xor     %ah, %ah
-        stc
-        int     $BIOS_DISKIO
-        jc      floppy_err
-        popa
+# Clobbers: All GP regs except %bp and %bx, %ax
+.set READ_LIM, 127
+read_disk_lba:
+        # most bioses cap out at 127 per request
+        # so to make this simpler, we just request 1 at a time
+        # this makes the boot slower, but its better than
+        # exceeeding the 512 byte limit of this terrible bios-ridden bootsector.
+        push    %ax
+
+        movw    %cx, (DAP_segment)
+        movw    %dx, (DAP_buffer)
+        movl    %esi, (DAP_lba)
+
+        mov     %edi, %ecx
+.Lread_loop:
+        # movw    $1, (DAP_transfer)
+        movzbw  BPB_SecPerClus(%bx), %ax
+        mov     %ax, (DAP_transfer)
+
+        test    %cx, %cx
+        jz      .Ldone
+
+        
+        pop     %dx
+        push    %dx
+
+        mov     $DAP, %si
+        mov     $0x42, %ah
+        int     $BIOS_INT_disk
+        jc      disk_err
+
+        dec     %cx
+        mov     (DAP_transfer), %ax
+        movzbl  BPB_SecPerClus(%bx), %edi
+        # mulw    %edi
+        addl    %edi, (DAP_lba)
+        movl    %edi, %eax
+        mulw    BPB_BytsPerSec(%bx)
+        addw    %ax, (DAP_buffer)
+
+        jmp     .Lread_loop
+.Ldone:
+        pop     %ax
+        ret
+        
+
+# Converts a cluster number to a first-sector LBA number.
+# Parameters:
+#       - %bx: BS base
+#       - %edi: cluster
+# Returns:
+#       - %eax: lba
+# Clobbers: %di, %edx
+clus_to_lba:
+        subl    $2, %edi
+        movzbl  BPB_SecPerClus(%bx), %eax
+        mul     %edi
+        addl    (FstDSec), %eax
+        addl    BPB_HiddSec(%bx), %eax
+        ret
+
+
+# Converts an LBA to a cluster number.
+# Parameters:
+#       - %bx: BS base
+#       - %edi: LBA
+# Returns:
+#       - %eax: cluster
+# Clobbers: %edi, %edx
+lba_to_clus:
+        subl    (FstDSec), %edi
+        mov     %edi, %eax
+        subl    BPB_HiddSec(%bx), %eax
+        movzbl  BPB_SecPerClus(%bx), %edi
+        xor     %edx, %edx
+        div     %edi
+        addl    $2, %eax
         ret
 
 
 
+FstDSec:   .long 0
 
-msg_boot_loading:       .asciz "Loading kernel..."
-emsg_kernel_not_found:  .asciz "NO KERNEL"
-emsg_disk_read:         .asciz "DISK ERR"
-kernel_name:            .ascii "KERNEL  BIN"
-.set kernel_name_len, . - kernel_name
+# The structure needs to be 4-byte aligned.
+.align 4
+DAP:
+DAP_size:       .byte 0x10      # size of packet
+DAP_zero:       .byte 0         # always zero
+DAP_transfer:   .word 1         # number of sectors to transfer
+# The buffer needs to be 2-byte aligned.
+DAP_buffer:     .word 0         # Offset
+DAP_segment:    .word 0         # Segment
+DAP_lba:        .long 0         # LBA, zero is the reserved area, everything else starts from one.
+                .long 0         # for big LBA
 
-.if kernel_name_len != 11
-        .err
-.endif
 
-kcluster:         .word 0
+# puts:
+#         push    %dx
+#         push    %ax
+#         lea     (stage_one_err), %si
+# .Lputs_loop:
+#         lodsb
+#         orb     %al, %al
+#         jz      .Lputs_done
+#
+#         movb    $0x0e, %ah
+#         xorb    %bh, %bh
+#         int     $BIOS_INT_video
+#
+#         jmp     .Lputs_loop
+# .Lputs_done:
+#         pop     %dx
+#
+#         movb    $0x0e, %ah
+#         xorb    %bh, %bh
+#         int     $BIOS_INT_video
+#
+#         pop     %ax
+#         pop     %si
+#         ret
 
-.fill 510 - (. - __start), 1, 0
+
+stage2_file:            .ascii "STAGE2  BIN"
+.set stage2_file_len, . - stage2_file
+stage_one_err:          .asciz "ERR: "
+
+
+
+.fill 510 - (. - fat_jmp), 1, 0
 .word 0xaa55
 
+.align 2
 buffer:
 

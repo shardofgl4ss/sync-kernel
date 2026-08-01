@@ -5,9 +5,9 @@
 #ifndef KERNEL_PROJECT_CTYPE_H
 #define KERNEL_PROJECT_CTYPE_H
 
-#include "ktypes.h"
+#include "types.h"
 
-#define _CTYPE static inline __attribute__((const, always_inline))
+#define _CTYPE static inline __attribute__((const, always_inline, used))
 
 /* These do not explicitly comply with POSIX standards as they take u8's. ------ *
  * But this is only used inside the kernel anyway. As long as they do what ----- *

@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef long unsigned ssize_t;
+typedef long signed ssize_t;
 
 typedef int8_t i8;
 typedef int16_t i16;

@@ -3,7 +3,7 @@
 //
 
 #include "stdio.h"
-#include "ktypes.h"
+#include "types.h"
 #include "vga.h"
 
 // These are just wrappers to more easily swap them if needed later on.

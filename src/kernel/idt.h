@@ -5,7 +5,7 @@
 #ifndef KERNEL_PROJECT_IDT_H
 #define KERNEL_PROJECT_IDT_H
 
-#include "ktypes.h"
+#include "types.h"
 
 #define FLAGSET(x, f)           (x |= f)
 #define FLAGUNSET(x, f)         (x &= ~f)

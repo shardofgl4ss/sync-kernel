@@ -5,10 +5,10 @@
 #ifndef KERNEL_PROJECT_IO_H
 #define KERNEL_PROJECT_IO_H
 
-#include "ktypes.h"
+#include "types.h"
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline void outb(u16 port, u8 val)
 {
 	__asm__ volatile (
@@ -20,7 +20,7 @@ static inline void outb(u16 port, u8 val)
 };
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline u8 inb(u16 port)
 {
 	u8 ret;
@@ -34,7 +34,7 @@ static inline u8 inb(u16 port)
 };
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline void outw(u16 port, u16 val)
 {
 	__asm__ volatile (
@@ -46,7 +46,7 @@ static inline void outw(u16 port, u16 val)
 };
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline u16 inw(u16 port)
 {
 	u16 ret;
@@ -60,7 +60,7 @@ static inline u16 inw(u16 port)
 };
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline void outl(u32 port, u32 val)
 {
 	__asm__ volatile (
@@ -72,7 +72,7 @@ static inline void outl(u32 port, u32 val)
 };
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline u32 inl(u32 port)
 {
 	u32 ret;
@@ -86,7 +86,7 @@ static inline u32 inl(u32 port)
 };
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline void outq(u64 port, u64 val)
 {
 	__asm__ volatile (
@@ -98,7 +98,7 @@ static inline void outq(u64 port, u64 val)
 };
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline u64 inq(u64 port)
 {
 	u64 ret;
@@ -112,7 +112,7 @@ static inline u64 inq(u64 port)
 };
 
 
-__attribute__((always_inline))
+__attribute__((always_inline, used))
 static inline void x86_hlt(void) { __asm__ volatile ("hlt" ::: "memory"); }
 
 #endif //KERNEL_PROJECT_IO_H

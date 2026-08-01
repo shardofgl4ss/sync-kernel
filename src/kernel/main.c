@@ -22,9 +22,9 @@ _Noreturn void kidle(void)
 void kernel_main(void)
 {
 	kinit();
+	x86_cli();
 
 	puts("Hello world, from 64 bit C kernel!\n");
-
 	kidle();
 }
 
