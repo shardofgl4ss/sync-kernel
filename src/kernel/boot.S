@@ -1,35 +1,44 @@
+.set MAGIC,     0xE85250D6
+.set MB_SIZE,   mb_end - mb_start
+
+
 .extern _begin
-.extern synos_loader
-.type synos_loader, @function
-
-.code16
-.section .text.stub
-        .global start
+.type _begin, @object
+.extern start_kernel
+.type start_kernel, @function
 
 
+.align 8
+.section .multiboot
+mb_start:
+        .long MAGIC
+        .long 0
+        .long MB_SIZE
+        .long -(MAGIC + 0 + MB_SIZE)
 
-#define VGA_ADDR                0xb8000
+        .short 0
+        .short 0
+        .long 8
+mb_end:
+        
+
+.section .preinit.bss
+        .align 16
+tstack_bottom:
+        .skip 0x4000
+tstack_top:
 
 
-        .global prot_mode_start
-        .global long_mode_start
-
-start:
-        # This instruction gets truncated into 16 bit by default,
-        # despite needing to be a 32 bit address. addr32 overrides this.
-        addr32  lgdt    (GDT_descriptor - start)
-
-	# movb    $'A', %al
-	# outb    %al, $0xe9
-
-        movl    %cr0, %eax
-        orl     $1, %eax
-        movl    %eax, %cr0
-
-
-        ljmpl   $CODE_SEGMENT, $prot_mode_start
+.section .preinit, "ax", @progbits
+        .globl _start
+        .type _start, @function
 .code32
-prot_mode_start:
+_start:
+        mov     %ebx, (multiboot2_struct)
+
+        lgdt    (GDT_descriptor)
+
+        .cfi_startproc
         movw    $DATA_SEGMENT, %ax
         movw    %ax, %ds
         movw    %ax, %es
@@ -40,15 +49,24 @@ prot_mode_start:
         call    check_cpuid
         call    check_longmode
 
+        .cfi_endproc
 enter_long:
+        .cfi_startproc
         call    setup_vmpages
         call    enable_paging
 
-        lgdt    GDT64_descriptor
+        lgdt    (GDT64_descriptor)
+
+	# movb    $'A', %al
+	# outb    %al, $0xe9
 
         jmp     $CODE_SEGMENT64, $long_mode_start
+
+        .cfi_endproc
 .code64
 long_mode_start:
+        .cfi_startproc
+
         movw    $0x0, %ax
         movw    %ax, %ds
         movw    %ax, %es
@@ -56,19 +74,19 @@ long_mode_start:
         movw    %ax, %fs
         movw    %ax, %gs
 
-        lea     _begin, %rsp
-        mov     %rsp, %rbp
+        movq    $tstack_top, %rsp
+        andq    $-16, %rsp
+        movq    %rsp, %rbp
 
-	# movb    $'S', %al
-	# outb    %al, $0xe9
-
-        call    synos_loader
+        movq    (multiboot2_struct), %rdi
+        call    start_kernel
 
         cli
         hlt
-.size start, . - start
+        .cfi_endproc
+.size _start, . - _start
 
-
+multiboot2_struct: .space 0x8
 
 .code32
 .set PT_FLAGS,          ((1 << 0) | (1 << 1))            # 0b00000011 present, writable
@@ -78,13 +96,13 @@ long_mode_start:
 setup_vmpages:
         movl    $pagetable_L3, %eax
         orl     $PT_FLAGS, %eax
-        mov     %eax, (pagetable_L4)
+        movl    %eax, (pagetable_L4)
 
         movl    $pagetable_L2, %eax
         orl     $PT_FLAGS, %eax
         movl    %eax, (pagetable_L3)
 
-        xor     %ecx, %ecx
+        xorl    %ecx, %ecx
 .Lsetup_vmpages_loop:   # mapping a whole page table
 
         movl    $PT_MAPSZ, %eax
@@ -92,7 +110,7 @@ setup_vmpages:
         orl     $PT_FLAGS_HP, %eax
         movl    %eax, pagetable_L2(, %ecx, 8)
 
-        inc     %ecx
+        incl    %ecx
         cmpl    $0x200, %ecx
         jne     .Lsetup_vmpages_loop
 
@@ -139,7 +157,7 @@ stub_perror:
         push    %edi
         push    %esi
 
-        movl    $VGA_ADDR, %edi
+        movl    $0xb8000, %edi
         movl    $VGA_LEN, %ecx
 .Lclear_line:
         movb    $0, (%edi)
@@ -151,7 +169,7 @@ stub_perror:
 
 
 
-        movl    $VGA_ADDR, %edi
+        movl    $0xb8000, %edi
         movl    $stub_err, %esi
         movl    $stub_err_len, %ecx
         xor     %ah, %ah
@@ -167,6 +185,9 @@ stub_perror:
 
         pop     %ecx
         pop     %esi
+
+	movb    $'A', %al
+	outb    %al, $0xe9
 
         cmp     $1, %ah
         mov     $1, %ah
@@ -222,7 +243,7 @@ check_longmode:
 .size check_longmode, . - check_longmode
 
 
-.section .rodata.stub
+.section .preinit.rodata, "a", @progbits
 
         stub_err:       .ascii "BOOT ERR: "
         .set stub_err_len, . - stub_err
@@ -322,10 +343,9 @@ GDT64_descriptor:
         .quad GDT64_start
 
 .set CODE_SEGMENT64,    gdt64_code_desc - GDT64_start
-# .set DATA_SEGMENT64,    gdt64_data_desc - GDT_start
 
-.global CODE_SEGMENT64
-.type CODE_SEGMENT64, @object
+# .global CODE_SEGMENT64
+# .type CODE_SEGMENT64, @object
 
 ##### Page tables #####
 .section .pt, "aw", @nobits
@@ -333,3 +353,5 @@ GDT64_descriptor:
         pagetable_L4:   .space 0x1000
         pagetable_L3:   .space 0x1000
         pagetable_L2:   .space 0x1000
+
+

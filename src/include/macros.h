@@ -1,5 +1,5 @@
-#ifndef SHARED_INC_MACROS_H
-#define SHARED_INC_MACROS_H
+#ifndef SYOS_MACROS_H
+#define SYOS_MACROS_H
 
 #ifdef __ASSEMBLER__
 // Assembler-specific macros start here.
@@ -45,6 +45,9 @@
 // Non-assembler macros start here.
 
 
+#define _SY_PRIMITIVE        __attribute__((always_inline)) static inline
+
+
 #endif
 
-#endif // SHARED_INC_MACROS_H
+#endif // SYOS_MACROS_H

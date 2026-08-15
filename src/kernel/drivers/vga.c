@@ -5,7 +5,7 @@
 #include "vga.h"
 #include "kctype.h"
 #include "kstring.h"
-#include "../../include/types.h"
+#include "types.h"
 
 // fg | (bg << 4), sets the kernel tty? init color.
 static constexpr enum vga_color VGA_INIT_COLOR = (VGA_COLOR_LIGHT_CYAN | (VGA_COLOR_BLACK << 4));
@@ -16,7 +16,7 @@ static constexpr int VGA_HEIGHT = 25;
 static constexpr int VGA_CELLS = VGA_WIDTH * VGA_HEIGHT;
 
 // should only store enough for one line to make it easier.
-static constexpr int VGA_WBUF_SIZE = VGA_WIDTH;
+// static constexpr int VGA_WBUF_SIZE = VGA_WIDTH;
 static constexpr int VGA_MAX_STRING_SIZE = VGA_CELLS;
 
 static_assert(VGA_TABSTOP % 2 == 0 && VGA_TABSTOP <= VGA_WIDTH,
@@ -38,7 +38,7 @@ static struct kvga_term {
 } kvga;	// only vga driver should be able to access this and VGA_OUT.
 
 
-__attribute__((section(".vga")))
+__attribute__((section(".vga"))) //
 volatile static vga_cell_t VGA_OUT[VGA_CELLS];
 
 
@@ -52,7 +52,7 @@ static inline enum vga_color vga_set_cell_color(const enum vga_color fg,
 /* this just writes where you specify */
 static void vga_write_cell_at(const vga_cell_t cell, const int x, const int y)
 {
-	const int vga_idx = y * VGA_WIDTH + x;
+	const int vga_idx = (y * VGA_WIDTH) + x;
 	VGA_OUT[vga_idx] = cell;
 }
 
@@ -113,7 +113,7 @@ void vga_init(void)
 
 void vga_setcolor(const enum vga_color fg, const enum vga_color bg)
 {
-	kvga.color = vga_set_cell_color(fg, bg);
+        kvga.color = vga_set_cell_color(fg, bg);
 }
 
 
@@ -145,7 +145,7 @@ void vga_putchar(const char c)
 
 void vga_puts(const char *str)
 {
-	int len = strlen(str);
+	int len = (int)strlen(str);
 
 	if (len >= VGA_MAX_STRING_SIZE) {
 		len = VGA_MAX_STRING_SIZE - 1;
@@ -177,7 +177,7 @@ void vga_clear_line(void)
 		.color = kvga.color
 	};
 
-	int vga_idx = kvga.cy * VGA_WIDTH + kvga.cx;
+	int vga_idx = (kvga.cy * VGA_WIDTH) + kvga.cx;
 	int distance = VGA_WIDTH - kvga.cx;
 
 	while (distance--)

@@ -5,7 +5,7 @@
 #ifndef KERNEL_PROJECT_KINIT_H
 #define KERNEL_PROJECT_KINIT_H
 
-extern void kinit(void);
+// extern void kinit(void);
 
 
 #endif //KERNEL_PROJECT_KINIT_H

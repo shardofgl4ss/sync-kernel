@@ -3,8 +3,8 @@
 //
 
 #include "kstring.h"
-
 #include "io.h"
+#include "str_io.h"
 
 
 size_t strlen(const char *restrict str)
@@ -22,7 +22,6 @@ size_t strlen(const char *restrict str)
 size_t strnlen(const char *restrict str, const size_t maxlen)
 {
 	size_t i = 0;
-	// ReSharper disable once CppPossiblyErroneousEmptyStatements
 	for (; (i < maxlen) && str[i]; i++);
 
 	return i;

@@ -7,10 +7,13 @@
 #include "irq.h"
 #include "kinit.h"
 #include "stdio.h"
+#include "gdt.h"
+#include "isr.h"
+#include "idt.h"
+#include "pagetbl.h"
+#include "panic.h"
 
-
-extern char _begin;
-#define KMAP_ORG        _begin
+#include "drivers/vga.h"
 
 _Noreturn void kidle(void)
 {
@@ -21,10 +24,11 @@ _Noreturn void kidle(void)
 
 void kernel_main(void)
 {
-	kinit();
-	x86_cli();
+        kpage_init();
+        kern_gdt_init();
+        isr_init();
+        idt_init();
 
-	puts("Hello world, from 64 bit C kernel!\n");
 	kidle();
 }
 

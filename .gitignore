@@ -70,8 +70,10 @@ compile_commands.json
 *.gdb
 run.sh
 
-# build dir
+# dirs
 build/
+uefi/
+temp/
 
 # qemu
 qemu.log

@@ -296,7 +296,7 @@ isr_common:
         mov     %ds, %ax
         push    %rax
 
-        movw    $CODE_SEGMENT64, %ax
+        movw    (CODE_SEGMENT64), %ax
         movw    %ax, %ds
         movw    %ax, %es
         movw    %ax, %fs

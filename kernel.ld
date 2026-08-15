@@ -1,59 +1,123 @@
-/* OUTPUT_FORMAT(binary) */
-ENTRY(start)
+ENTRY(_start)
+
+KERNEL_OFFSET = 0xffffffff80000000;
+PT_COUNT = 8;
+
+PHDRS
+{
+        preinit PT_LOAD FLAGS(5);
+        pre_pt  PT_LOAD FLAGS(6);
+        text    PT_LOAD FLAGS(5);
+        rodata  PT_LOAD FLAGS(4);
+        data    PT_LOAD FLAGS(6);
+        pagetbl PT_LOAD FLAGS(6);
+}
+
 
 SECTIONS
 {
-        . = 0x10000;
-        kstack_top = .;
+        . = 0x100000;
+
+        _prebegin = .;
+
+        /* These two sections are in an identity map, no AT() */
+        .preinit : ALIGN(0x1000)
+        {
+                KEEP(*(.multiboot))
+                KEEP(*(.preinit))
+                KEEP(*(.preinit.*))
+        } :preinit
+
+        .pt (NOLOAD) : ALIGN(0x1000) {
+                __PAGETABLE_START = .;
+                *(.pt)
+                __PAGETABLE_END = .;
+        } :pre_pt
+
+        _preend = .;
+
+        /* . = KERNEL_OFFSET + _KERN_LMA; */
+        . = ALIGN(0x1000);
+        _KERN_LMA = .;
+        _OFFS = 0x0;
+
+        . += KERNEL_OFFSET;
+        _KERN_VMA = .;
         _begin = .;
 
-        .text ALIGN(0x1000) :
+        .text ALIGN(0x1000) : AT(_KERN_LMA)
         {
-                *(.text.stub)
                 *(.text)
-                *(.text.isr)
-        }
+                *(.text.*)
+        } :text
 
-        .rodata ALIGN(0x1000) :
+        _OFFS = SIZEOF(.text);
+        _OFFS = ALIGN(_OFFS, 0x1000);
+
+        .rodata ALIGN(0x1000) : AT(_KERN_LMA + _OFFS)
         {
-                *(.rodata*)
-        }
+                *(.rodata)
+                *(.rodata.*)
+        } :rodata
 
-        .data ALIGN(0x1000) :
+        _after_ro = .;
+
+        _OFFS += SIZEOF(.rodata);
+        _OFFS = ALIGN(_OFFS, 0x1000);
+
+        .data ALIGN(0x1000) : AT(_KERN_LMA + _OFFS)
         {
                 __data_start = .;
+
                 *(.data)
                 *(.data.*)
-                __data_end = .;
-        }
 
-        .bss ALIGN(0x1000) : {
+                . = ALIGN(0x10);
+
+                *(.got)
+                *(.got.*)
+                *(.got.plt)
+
+                __data_end = .;
+        } :data
+
+        _OFFS += SIZEOF(.data);
+        _OFFS = ALIGN(_OFFS, 0x1000);
+
+        .bss ALIGN(0x1000) : AT(_KERN_LMA + _OFFS)
+        {
                 __bss_start = .;
+
                 *(COMMON)
                 *(.bss)
-                __bss_end = .;
-        }
+                *(.bss.*)
 
-	.pt ALIGN(0x1000) : {
-		__PAGETABLE_START = .;
-		*(.pt)
-		__PAGETABLE_END = .;
-	}
+                __bss_end = .;
+        } :data
+
+        _OFFS += SIZEOF(.bss);
+        _OFFS = ALIGN(_OFFS, 0x1000);
+
+        _end = .;
+        kstack_guard = .;
+        . = ALIGN(0x1000) + 0x1000;
+        /* kstack_top = . + 8388608; */
+        . += 8388608;
+        kstack_top = .;
+
+        .kern_pt ALIGN(0x1000) (NOLOAD) :
+        {
+                _KERN_PT_BEGIN = .;
+                *(.kern_pt)
+                _KERN_PT_END = .;
+        } :pagetbl
+
 
         /DISCARD/ :
         {
                 *(.eh_frame)
-                *(.comment)
-                *(.note.gnu.property)
-                *(.note*)
+                *(.eh_frame_hdr)
         }
 
-        . = ALIGN(0x1000);
-        _end = .;
-
-        .vga 0xb8000 (NOLOAD) : {
-                _vga_start = .;
-                *(.vga)
-                _vga_end = .;
-        }
+        ASSERT(kstack_top - _begin <= PT_COUNT * 0x200000, "kernel size exceeds static PT count")
 }
