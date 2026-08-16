@@ -13,6 +13,8 @@ extern char kstack_guard[];
 extern char kstack_top[];
 extern char _kheap[];
 
+#define _Nullable
+#define _Nonnull
 
 #define PHYSMAP         ((u64)KERNEL_OFFSET)
 
@@ -71,17 +73,6 @@ static inline void tlb_invl_page(u64 vaddr)
 }
 
 
-static inline void *pml4_addr_get(void)
-{
-        void *cr3;
-        __asm__ volatile (
-                "movq %%cr3, %0"
-                : "=r"(cr3)
-        );
-        return cr3;
-}
-
-
 
 __attribute__((const)) //
 static inline u64 page_l4_idx(void *vaddr) { return (((u64)vaddr >> 39) & 0x1FF); }
@@ -100,17 +91,54 @@ static inline void *page_phys_rebase(void *paddr, u64 shift, u64 mask)
 }
 
 
-
-
 #define BITRANGE_MASK(a, b)     ((1ULL << ((a) - (b) + 1ULL)) - 1ULL)
+constexpr u64 SHIFT_PGENTRY = 12;
+constexpr u64 BMASK_PGENTRY = BITRANGE_MASK(51, 12);
+
+#define PT_REBASE(p)            (void *)page_phys_rebase( \
+                (void *)(p), \
+                SHIFT_PGENTRY, \
+                BMASK_PGENTRY)
+
+static inline PageTable *kpt_get_l4(void)
+{
+	void *cr3;
+        __asm__ volatile (
+                "movq %%cr3, %0"
+                : "=r"(cr3)
+        );
+        return PT_REBASE(cr3);
+}
+
+static inline PageTable *kpt_get_l3(void *vaddr, PageTable *_Nullable l4)
+{
+        if (l4) {
+                return PT_REBASE(l4->entries[page_l4_idx(vaddr)]);
+        }
+        return PT_REBASE(kpt_get_l4());
+
+}
+static inline PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3)
+{
+        if (l3) {
+                return PT_REBASE(l3->entries[page_l3_idx(vaddr)]);
+        }
+        return PT_REBASE(kpt_get_l3(vaddr, NULL));
+}
+static inline PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
+{
+        if (l2) {
+                return PT_REBASE(l2->entries[page_l2_idx(vaddr)]);
+        }
+        return PT_REBASE(kpt_get_l2(vaddr, NULL));
+}
+
 
 // pagetables have given me an aneurysm
 void *kpt_get_phys(void *vaddr)
 {
         vaddr = (void *)PAGE_ALIGNDOWN((u64)vaddr);
 
-        constexpr u64 page_entry_shift = 12;
-        constexpr u64 bmask_page_entry = BITRANGE_MASK(51, 12);
         constexpr u64 bmask_51_21 = BITRANGE_MASK(51, 21);
         constexpr u64 bmask_51_30 = BITRANGE_MASK(51, 30);
 
@@ -120,12 +148,12 @@ void *kpt_get_phys(void *vaddr)
 
         u64 entry = 0;
 
-        const PageTable *pml4 = page_phys_rebase(pml4_addr_get(), page_entry_shift, bmask_page_entry);
+        const PageTable *pml4 = kpt_get_l4();
         entry = pml4->entries[page_l4_idx(vaddr)];
         if ((entry & PT_FLAG_PRESENT) == 0)
                 return KPAGE_ERR;
 
-        const PageTable *pdpt = page_phys_rebase((void *)entry, page_entry_shift, bmask_page_entry);
+        const PageTable *pdpt = PT_REBASE(entry);
         entry = pdpt->entries[page_l3_idx(vaddr)];
 
         if ((entry & PT_FLAG_PRESENT) == 0) 
@@ -137,7 +165,7 @@ void *kpt_get_phys(void *vaddr)
                 return (void *)paddr;
         }
 
-        const PageTable *pd = page_phys_rebase((void *)entry, page_entry_shift, bmask_page_entry);
+        const PageTable *pd = PT_REBASE(entry);
         entry = pd->entries[page_l2_idx(vaddr)];
 
         if ((entry & PT_FLAG_PRESENT) == 0)
@@ -149,13 +177,13 @@ void *kpt_get_phys(void *vaddr)
                 return (void *)paddr;
         }
 
-        const PageTable *pt = page_phys_rebase((void *)entry, page_entry_shift, bmask_page_entry);
+        const PageTable *pt = PT_REBASE(entry);
         entry = pt->entries[page_l1_idx(vaddr)];
 
         if ((entry & PT_FLAG_PRESENT) == 0)
                 return KPAGE_ERR;
 
-        u64 paddr = (u64)page_phys_rebase((void *)entry, page_entry_shift, bmask_page_entry);
+        u64 paddr = (u64)PT_REBASE(entry);
 	paddr |= (u64)page_phys_rebase(vaddr, 0, bmask_11_00);
 	return (void *)paddr;
 }
@@ -163,19 +191,19 @@ void *kpt_get_phys(void *vaddr)
 
 void kpt_uhalf_init(void)
 {
-        extern PageTable _PAGE_PML4;
-        extern PageTable _PAGE_PDPT;
-        extern PageTable _PAGE_PD;
-        extern PageTable _PAGE_PT[PAGE_PT_COUNT];
-
-        memcpy(&KPAGETBL_L4, &_PAGE_PML4, sizeof(PageTable));
-        memcpy(&KPAGETBL_L3, &_PAGE_PDPT, sizeof(PageTable));
-        memcpy(&KPAGETBL_L2, &_PAGE_PD, sizeof(PageTable));
-        memcpy(KPAGETBL_L1, _PAGE_PT, sizeof(PageTable) * PAGE_PT_COUNT);
-
-        // unmapping the 2mb identity map region.
-        // vga memory will have to be remapped.
-        KPAGETBL_L3.entries[0] &= ~(PT_FLAG_PRESENT | PT_FLAG_PAGESIZE);
+        // extern PageTable _PAGE_PML4;
+        // extern PageTable _PAGE_PDPT;
+        // extern PageTable _PAGE_PD;
+        // extern PageTable _PAGE_PT[PAGE_PT_COUNT];
+        //
+        // memcpy(&KPAGETBL_L4, &_PAGE_PML4, sizeof(PageTable));
+        // memcpy(&KPAGETBL_L3, &_PAGE_PDPT, sizeof(PageTable));
+        // memcpy(&KPAGETBL_L2, &_PAGE_PD, sizeof(PageTable));
+        // memcpy(KPAGETBL_L1, _PAGE_PT, sizeof(PageTable) * PAGE_PT_COUNT);
+        //
+        // // unmapping the 2mb identity map region.
+        // // vga memory will have to be remapped.
+        // KPAGETBL_L3.entries[0] &= ~(PT_FLAG_PRESENT | PT_FLAG_PAGESIZE);
 }
 
 void kperm_init(void)
@@ -183,10 +211,13 @@ void kperm_init(void)
         const u64 dist = ((uintptr_t)_after_ro - (uintptr_t)_begin) / sizeof(PageTable);
         PageTable *arr = (void *)_begin;
 
+        PageTable *l2 = kpt_get_l2(vaddr, NULL);
+
         void *v;
         for (u64 i = 0; i < dist; i++) {
                 v = &arr[i];
-                KPAGETBL_L1[page_l2_idx(v)].entries[page_l1_idx(v)] &= ~PT_FLAG_WRITABLE;
+                PageTable *l1 = kpt_get_l1(vaddr, l2);
+                l1->entries[page_l1_idx(v)] &= ~PT_FLAG_WRITABLE;
         }
 }
 
@@ -200,12 +231,15 @@ void virt_map_page(void *vaddr)
 /* Unmaps the given 4kb memory region, rounded down to the nearest 4KB */
 void virt_unmap_page(void *vaddr)
 {
+        if (!vaddr) return;
         usize valign = PAGE_ALIGNDOWN((usize)vaddr)
-
         void *v = (void *)valign;
-        volatile u64 *restrict pte = &KPAGETBL_L1[page_l2_idx(v)].entries[page_l1_idx(v)];
-        *pte &= ~PT_FLAG_PRESENT;
 
+        PageTable *l1 = kpt_get_l1(vaddr, NULL);
+        volatile u64 *restrict pte = &l1->entries[page_l1_idx];
+
+
+        *pte &= ~PT_FLAG_PRESENT;
         tlb_invl_page(valign);
 }
 
@@ -218,10 +252,13 @@ void kstack_guard_init(void)
 
 void physmap_init(mmap_t *map) 
 {
-        void *first_pg = (void *)_kheap;
+        void *first_pg = (void *)((u8 *)_kheap + KERN_START_MEMB);
         u64 valign = PAGE_ALIGNDOWN((u64)first_pg);
         void *v = (void *)valign;
-        volatile u64 *restrict pte = &KPAGETBL_L1[page_l2_idx(v)].entries[page_l1_idx(v)];
+
+        PageTable *l1 = kpt_get_l1(vaddr, NULL);
+        volatile u64 *restrict pte = l1->entries[page_l1_idx(v)];
+
 
         *pte = ((u64)virt_to_phys(first_pg)) | PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
 

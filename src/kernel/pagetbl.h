@@ -18,6 +18,7 @@ static_assert(sizeof(PageTable) == 0x1000, __FILE__ " PageTable size error\n");
 #define PAGE_ALIGNDOWN(x)       (x & ~(PAGESIZE - 1))
 
 
+
 typedef enum {
 	PT_FLAG_PRESENT                 = 1 << 0,
 	PT_FLAG_WRITABLE                = 1 << 1,
@@ -30,13 +31,14 @@ typedef enum {
 
 
 
-static constexpr usize PAGE_PT_COUNT = 8;
+static constexpr int KERN_START_MEMB    = 131072;
+// static constexpr usize PAGE_PT_COUNT = 8;
 
 
-extern PageTable KPAGETBL_L4;
-extern PageTable KPAGETBL_L3;
-extern PageTable KPAGETBL_L2;
-extern PageTable KPAGETBL_L1[PAGE_PT_COUNT];
+// extern PageTable KPAGETBL_L4;
+// extern PageTable KPAGETBL_L3;
+// extern PageTable KPAGETBL_L2;
+// extern PageTable KPAGETBL_L1[PAGE_PT_COUNT];
 
 
 extern u64 LOAD_ADDR;

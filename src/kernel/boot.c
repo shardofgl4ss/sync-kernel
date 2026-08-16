@@ -4,7 +4,6 @@
 #include <multiboot2.h>
 
 
-static constexpr int KERN_START_MEMB    = 131072;
 static constexpr int PAGE_L1_MEM = sizeof(PageTable) * 512;
 
 
