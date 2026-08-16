@@ -4,7 +4,7 @@
 
 #include "multiboot2.h"
 
-typedef multiboot_tag_mmap mmap_t;
+typedef struct multiboot_tag_mmap mmap_t;
 
 extern char KERNEL_OFFSET[];
 extern char _begin[];
@@ -13,6 +13,7 @@ extern char kstack_guard[];
 extern char kstack_top[];
 extern char _kheap[];
 
+#define _CACHEALIGN     __attribute__((aligned(64)))
 #define _Nullable
 #define _Nonnull
 
@@ -33,16 +34,22 @@ struct phys_mem_rpool {
         u64 region_bmap[KPG_MAX_REGIONS];
         // actual region max
         int regions;
-} __attribute__((aligned(PAGESIZE)));
-_Static_assert(sizeof(struct phys_mem_rpool) == PAGESIZE,
-	       "phys_memcore not equal to size of page!\n");
+} _CACHEALIGN;
+
+
+
+struct page_frame_t {
+        struct page_frame_t *next;
+} _PAGEALIGNED;
 
 
 struct kpage_core {
-        struct phys_mem_rpool *rpool;
-};
+        struct phys_mem_rpool rpool;
+} _PAGEALIGNED;
+_Static_assert(sizeof(struct kpage_core) == PAGESIZE,
+                "kpage_core not equal to size of page!\n");
 
-
+struct kpage_core *MASTER_PAGE = NULL;
 
 
 
@@ -209,14 +216,14 @@ void kpt_uhalf_init(void)
 void kperm_init(void)
 {
         const u64 dist = ((uintptr_t)_after_ro - (uintptr_t)_begin) / sizeof(PageTable);
-        PageTable *arr = (void *)_begin;
+        struct page_frame_t *arr = (void *)_begin;
 
-        PageTable *l2 = kpt_get_l2(vaddr, NULL);
+        PageTable *l2 = kpt_get_l2(arr, NULL);
 
         void *v;
         for (u64 i = 0; i < dist; i++) {
                 v = &arr[i];
-                PageTable *l1 = kpt_get_l1(vaddr, l2);
+                PageTable *l1 = kpt_get_l1(v, l2);
                 l1->entries[page_l1_idx(v)] &= ~PT_FLAG_WRITABLE;
         }
 }
@@ -232,12 +239,12 @@ void virt_map_page(void *vaddr)
 void virt_unmap_page(void *vaddr)
 {
         if (!vaddr) return;
-        usize valign = PAGE_ALIGNDOWN((usize)vaddr)
+        usize valign = PAGE_ALIGNDOWN((usize)vaddr);
         void *v = (void *)valign;
 
-        PageTable *l1 = kpt_get_l1(vaddr, NULL);
-        volatile u64 *restrict pte = &l1->entries[page_l1_idx];
+        PageTable *l1 = kpt_get_l1(v, NULL);
 
+        volatile u64 *restrict pte = &l1->entries[page_l1_idx(v)];
 
         *pte &= ~PT_FLAG_PRESENT;
         tlb_invl_page(valign);
@@ -256,28 +263,43 @@ void physmap_init(mmap_t *map)
         u64 valign = PAGE_ALIGNDOWN((u64)first_pg);
         void *v = (void *)valign;
 
-        PageTable *l1 = kpt_get_l1(vaddr, NULL);
-        volatile u64 *restrict pte = l1->entries[page_l1_idx(v)];
+        PageTable *l1 = kpt_get_l1(v, NULL);
+        volatile u64 *restrict pte = &l1->entries[page_l1_idx(v)];
 
 
         *pte = ((u64)virt_to_phys(first_pg)) | PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
 
-        rpool = first_pg;
-        memset(core, 0, PAGESIZE);
+        MASTER_PAGE = first_pg;
+        memset(MASTER_PAGE, 0, PAGESIZE);
 
-        int entries = map->size / map->entry_size;
-
+        const u8 *end = (u8 *)map + map->size;
         int bmi = 0;
-        for (int i = 0; i < entries; i++) {
-                multiboot_mmap_entry *e = map->entries[i];
-                if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
-                        rpool->region_addr[bmi] = e->addr;
-                        rpool->region_size[bmi] = e->len;
 
-                        rpool->regions++;
+        for (u8 *p = (u8 *)map + sizeof(*map); p < end; p += map->entry_size) {
+                const struct multiboot_mmap_entry *e = (void *)p;
+                if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
+                        MASTER_PAGE->rpool.region_addr[bmi] = e->addr;
+                        MASTER_PAGE->rpool.region_size[bmi] = e->len;
+
+                        MASTER_PAGE->rpool.regions++;
                         bmi++;
                 }
         }
+
+
+        // int entries = map->size / map->entry_size;
+        //
+        // int bmi = 0;
+        // for (int i = 0; i < entries; i++) {
+        //         struct multiboot_mmap_entry *e = map->entries[i];
+        //         if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
+        //                 MASTER_PAGE->rpool.region_addr[bmi] = e->addr;
+        //                 MASTER_PAGE->rpool.region_size[bmi] = e->len;
+        //
+        //                 MASTER_PAGE->rpool.regions++;
+        //                 bmi++;
+        //         }
+        // }
 }
 
 
