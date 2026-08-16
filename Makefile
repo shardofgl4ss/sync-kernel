@@ -57,10 +57,10 @@ kernel: 	$(KERNEL_ELF) $(KERNEL_ELF)
 standalone:	$(GRUB_FILE)
 
 
+# KVM acceleration with host cpu make it impossible to debug with GDB.
+# But it *is* closer to true hardware behavior then base QEMU.
 run: $(DISK_IMAGE) $(UEFI_CODE) $(UEFI_VARS)
 	qemu-system-x86_64 \
-		-accel kvm \
-		-cpu host \
 		-machine q35 \
 		-drive if=pflash,format=raw,readonly=on,file=$(UEFI_CODE) \
 		-drive if=pflash,format=raw,file=$(UEFI_VARS) \
@@ -69,8 +69,11 @@ run: $(DISK_IMAGE) $(UEFI_CODE) $(UEFI_VARS)
 		-no-shutdown \
 		-debugcon stdio \
 		-global isa-debugcon.iobase=0xe9 \
-		-d cpu_reset
-		# -s -S
+		-d cpu_reset \
+		-s -S
+		# -cpu host \
+		# -accel kvm
+
 
 
 $(DISK_IMAGE): $(KERNEL_ELF) $(GRUB_FILE)

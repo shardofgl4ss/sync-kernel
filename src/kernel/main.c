@@ -22,9 +22,9 @@ _Noreturn void kidle(void)
 	}
 }
 
-void kernel_main(void)
+void kernel_main(void *mmap)
 {
-        kpage_init();
+        kpage_init(mmap);
         kern_gdt_init();
         isr_init();
         idt_init();

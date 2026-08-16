@@ -18,7 +18,7 @@ SECTIONS
 {
         . = 0x100000;
 
-        _prebegin = .;
+        _kphys_start = .;
 
         /* These two sections are in an identity map, no AT() */
         .preinit : ALIGN(0x1000)
@@ -102,8 +102,11 @@ SECTIONS
         kstack_guard = .;
         . = ALIGN(0x1000) + 0x1000;
         /* kstack_top = . + 8388608; */
-        . += 8388608;
+        . += 2M;
         kstack_top = .;
+
+        /* this makes kstack_top a guard page spot. */
+        . += 0x1000;
 
         .kern_pt ALIGN(0x1000) (NOLOAD) :
         {
@@ -112,6 +115,11 @@ SECTIONS
                 _KERN_PT_END = .;
         } :pagetbl
 
+        
+        . = ALIGN(0x1000);
+        _kphys_end = . - KERNEL_OFFSET;
+        _kheap = .;
+
 
         /DISCARD/ :
         {
@@ -119,5 +127,6 @@ SECTIONS
                 *(.eh_frame_hdr)
         }
 
+        /* there may be an eventual moment where 16KB of static space isn't enough. */
         ASSERT(kstack_top - _begin <= PT_COUNT * 0x200000, "kernel size exceeds static PT count")
 }
