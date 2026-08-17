@@ -14,8 +14,8 @@ static_assert(sizeof(PageTable) == 0x1000, __FILE__ " PageTable size error\n");
 
 #define _PAGEALIGNED            __attribute__((aligned(PAGESIZE)))
 #define PAGESIZE                4096
-#define PAGE_ALIGNUP(x)         ((x + (PAGESIZE - 1)) & ~(PAGESIZE - 1))
-#define PAGE_ALIGNDOWN(x)       (x & ~(PAGESIZE - 1))
+#define PAGE_ALIGNUP(x)         (((x) + (PAGESIZE - 1)) & ~(PAGESIZE - 1))
+#define PAGE_ALIGNDOWN(x)       ((x) & ~(PAGESIZE - 1))
 
 
 

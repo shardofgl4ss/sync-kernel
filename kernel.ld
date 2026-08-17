@@ -1,7 +1,7 @@
 ENTRY(_start)
 
 KERNEL_OFFSET = 0xffffffff80000000;
-PT_COUNT = 8;
+/* PT_COUNT = 8; */
 
 PHDRS
 {
@@ -10,7 +10,7 @@ PHDRS
         text    PT_LOAD FLAGS(5);
         rodata  PT_LOAD FLAGS(4);
         data    PT_LOAD FLAGS(6);
-        pagetbl PT_LOAD FLAGS(6);
+        /* pagetbl PT_LOAD FLAGS(6); */
 }
 
 
@@ -99,24 +99,17 @@ SECTIONS
         _OFFS = ALIGN(_OFFS, 0x1000);
 
         _end = .;
+        . = ALIGN(0x1000);
+        . += 0x1000;
         kstack_guard = .;
-        . = ALIGN(0x1000) + 0x1000;
+
         /* kstack_top = . + 8388608; */
         . += 2M;
         kstack_top = .;
 
         /* this makes kstack_top a guard page spot. */
-        . += 0x1000;
-
-        .kern_pt ALIGN(0x1000) (NOLOAD) :
-        {
-                _KERN_PT_BEGIN = .;
-                *(.kern_pt)
-                _KERN_PT_END = .;
-        } :pagetbl
-
-        
         . = ALIGN(0x1000);
+        . += 0x1000;
         _kphys_end = . - KERNEL_OFFSET;
         _kheap = .;
 
@@ -128,5 +121,5 @@ SECTIONS
         }
 
         /* there may be an eventual moment where 16KB of static space isn't enough. */
-        ASSERT(kstack_top - _begin <= PT_COUNT * 0x200000, "kernel size exceeds static PT count")
+        /* ASSERT(kstack_top - _begin <= PT_COUNT * 0x200000, "kernel size exceeds static PT count") */
 }

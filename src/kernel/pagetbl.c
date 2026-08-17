@@ -49,8 +49,8 @@ struct kpage_core {
 _Static_assert(sizeof(struct kpage_core) == PAGESIZE,
                 "kpage_core not equal to size of page!\n");
 
-struct kpage_core *MASTER_PAGE = NULL;
 
+static struct kpage_core *MASTER_PAGE = NULL;
 
 
 // _KPAGE_ PageTable KPAGETBL_L4;
@@ -117,27 +117,30 @@ static inline PageTable *kpt_get_l4(void)
         return PT_REBASE(cr3);
 }
 
-static inline PageTable *kpt_get_l3(void *vaddr, PageTable *_Nullable l4)
+static PageTable *kpt_get_l3(void *vaddr, PageTable *_Nullable l4)
 {
         if (l4) {
                 return PT_REBASE(l4->entries[page_l4_idx(vaddr)]);
         }
-        return PT_REBASE(kpt_get_l4());
+        PageTable *pml4 = kpt_get_l4();
+        return PT_REBASE(pml4->entries[page_l4_idx(vaddr)]);
 
 }
-static inline PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3)
+static PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3)
 {
         if (l3) {
                 return PT_REBASE(l3->entries[page_l3_idx(vaddr)]);
         }
-        return PT_REBASE(kpt_get_l3(vaddr, NULL));
+        PageTable *pdpt = kpt_get_l3(vaddr, NULL);
+        return PT_REBASE(pdpt->entries[page_l3_idx(vaddr)]);
 }
-static inline PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
+static PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
 {
         if (l2) {
                 return PT_REBASE(l2->entries[page_l2_idx(vaddr)]);
         }
-        return PT_REBASE(kpt_get_l2(vaddr, NULL));
+        PageTable *pd = kpt_get_l2(vaddr, NULL);
+        return PT_REBASE(pd->entries[page_l2_idx(vaddr)]);
 }
 
 
@@ -263,7 +266,11 @@ void physmap_init(mmap_t *map)
         u64 valign = PAGE_ALIGNDOWN((u64)first_pg);
         void *v = (void *)valign;
 
-        PageTable *l1 = kpt_get_l1(v, NULL);
+        PageTable *l4 = kpt_get_l4();
+        PageTable *l3 = kpt_get_l3(v, l4);
+        PageTable *l2 = kpt_get_l2(v, l3);
+        PageTable *l1 = kpt_get_l1(v, l2);
+
         volatile u64 *restrict pte = &l1->entries[page_l1_idx(v)];
 
 
@@ -285,21 +292,6 @@ void physmap_init(mmap_t *map)
                         bmi++;
                 }
         }
-
-
-        // int entries = map->size / map->entry_size;
-        //
-        // int bmi = 0;
-        // for (int i = 0; i < entries; i++) {
-        //         struct multiboot_mmap_entry *e = map->entries[i];
-        //         if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
-        //                 MASTER_PAGE->rpool.region_addr[bmi] = e->addr;
-        //                 MASTER_PAGE->rpool.region_size[bmi] = e->len;
-        //
-        //                 MASTER_PAGE->rpool.regions++;
-        //                 bmi++;
-        //         }
-        // }
 }
 
 

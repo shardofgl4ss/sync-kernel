@@ -81,62 +81,20 @@ static inline void set_pagetable(PageTable *l4)
 }
 
 
-_PREINIT_
+_PREINIT_ __attribute__((noreturn, naked))
 _Noreturn static void call_main(struct multiboot_tag_mmap *map)
 {
-        kernel_main(map);
+        (void)map;
+	__asm__ volatile (
+                "movq $kstack_top, %rsp\n\t"
+                "andq $-0x10, %rsp\n\t"
+                "pushq $0\n\t"
 
-	// __asm__ volatile (
-	//                "movq $kstack_top, %rsp\n\t"
-	//                "andq $-0x10, %rsp\n\t"
-	//                "pushq $0\n\t"
-	//
-	//                // we don't need to use the GOT here,
-	//                // but I like the GOT. GOT my beloved.
-	//                "jmp *kernel_main@GOTPCREL(%rip)\n\t"
-	//                "hlt"
-	//        );
-}
-
-
-
-
-_PREINIT_
-void alloc_preinit(void)
-{
-        void *heap_phys = (void *)((u64)_kheap - get_koffs());
-        pf = heap_phys;
-
-        u64 *temp = heap_phys;
-        for (unsigned int i = 0; i < PAGESIZE / sizeof(u64); i++) {
-                temp[i] = 0ULL;
-        }
-
-        pf->base = (void *)((u64)heap_phys + sizeof(*pf));
-        pf->max_len = KERN_START_MEMB;
-}
-
-
-
-
-_PREINIT_
-void *alloc_frame(void)
-{
-        if (pf == NULL) 
-                return NULL;
-        // if preinit memory runs out, something else will die anyway.
-        if (pf->offset + PAGESIZE >= pf->max_len)
-                die();
-
-        void *a = (void *)((u8 *)pf->base + pf->offset);
-        pf->offset += PAGESIZE;
-
-        u64 *temp = a;
-        for (unsigned int i = 0; i < PAGESIZE / sizeof(u64); i++) {
-                temp[i] = 0ULL;
-        }
-
-        return a;
+                // we don't need to use the GOT here,
+                // but I like the GOT. GOT my beloved.
+                "jmp *kernel_main@GOTPCREL(%rip)\n\t"
+                "hlt"
+        );
 }
 
 
@@ -177,16 +135,58 @@ void chk_avail_mem(struct multiboot_tag_mmap *map)
                         if ((u8 *)_kphys_end + KERN_START_MEMB > entry_end) {
                                 die();
                         }
+                        return;
                 }
         }
 }
+
+
+_PREINIT_
+void alloc_preinit(void)
+{
+        void *heap_phys = (void *)((u64)_kheap - get_koffs());
+        pf = heap_phys;
+
+        u64 *temp = heap_phys;
+        for (unsigned int i = 0; i < PAGESIZE / sizeof(u64); i++) {
+                temp[i] = 0ULL;
+        }
+
+        pf->base = (void *)((u64)heap_phys + sizeof(*pf));
+        pf->max_len = KERN_START_MEMB - sizeof(*pf);
+}
+
+
+
+
+_PREINIT_
+void *alloc_frame(void)
+{
+        if (pf == NULL) 
+                return NULL;
+        // if preinit memory runs out, something else will die anyway.
+        if (pf->offset + PAGESIZE >= pf->max_len)
+                die();
+
+        void *a = (void *)((u8 *)pf->base + pf->offset);
+        pf->offset += PAGESIZE;
+
+        u64 *temp = a;
+        for (unsigned int i = 0; i < PAGESIZE / sizeof(u64); i++) {
+                temp[i] = 0ULL;
+        }
+
+        return a;
+}
+
+
 
 
 
 _PREINIT_
 void init_higher_half(void)
 {
-        const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
+        const u64 kernsz = ((u64)_kphys_end + KERN_START_MEMB) - (u64)_kphys_start;
         const u64 kern_l1_count = ((kernsz + (PAGE_L1_MEM - 1)) & ~(PAGE_L1_MEM - 1)) / PAGE_L1_MEM;
 
         PageTable *l4 = alloc_frame();
@@ -206,6 +206,12 @@ void init_higher_half(void)
         const u64 l3_index = (koffs >> 30) & 0x1ff;
         const u64 l2_index = (koffs >> 21) & 0x1ff;
 
+        u64 heap_page = (u64)_kphys_end & ~(PAGE_L1_MEM - 1);
+
+        const u64 l4_id_index = (heap_page >> 39) & 0x1ff;
+        const u64 l3_id_index = (heap_page >> 30) & 0x1ff;
+        const u64 l2_id_index = (heap_page >> 21) & 0x1ff;
+
         u64 l3_eaddr = ((u64)l3) | PT_FLAGS;
         u64 l2_eaddr = ((u64)l2) | PT_FLAGS;
         u64 l2_low_eaddr = ((u64)l2_low) | PT_FLAGS;
@@ -215,9 +221,11 @@ void init_higher_half(void)
 
         // 2mb low addresses have to be mapped otherwise
         // the moment %cr3 is loaded it will fault.
-        l4->entries[0] = l3_eaddr;
-        l3->entries[0] = l2_low_eaddr;
+
+        l4->entries[l4_id_index] = l3_eaddr;
+        l3->entries[l3_id_index] = l2_low_eaddr;
         l2_low->entries[0] = (0x0 | PT_FLAGS | 1 << 7);
+        l2_low->entries[l2_id_index] = (heap_page | PT_FLAGS | 1 << 7);
 
         for (u64 i = 0; i < kern_l1_count; i++) {
                 for (u64 j = 0; j < sizeof(PageTable) / sizeof(u64); j++) {
