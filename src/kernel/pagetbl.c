@@ -17,6 +17,7 @@ extern char _kheap[];
 #define _Nullable
 #define _Nonnull
 
+#define KPT_NOT_PRESENT ((void *)-2)
 #define PHYSMAP         ((u64)KERNEL_OFFSET)
 
 
@@ -96,7 +97,14 @@ static PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3)
                 return PT_REBASE(l3->entries[page_l3_idx(vaddr)]);
         }
         PageTable *pdpt = kpt_get_l3(vaddr, NULL);
-        return PT_REBASE(pdpt->entries[page_l3_idx(vaddr)]);
+        u64 e = pdpt->entries[page_l3_idx(vaddr)];
+
+        if (!(e & PT_FLAG_PRESENT))
+                return KPT_NOT_PRESENT;
+        if (e & PT_FLAG_PAGESIZE)
+                return NULL;
+
+        return PT_REBASE(e);
 }
 static PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
 {
@@ -104,7 +112,14 @@ static PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
                 return PT_REBASE(l2->entries[page_l2_idx(vaddr)]);
         }
         PageTable *pd = kpt_get_l2(vaddr, NULL);
-        return PT_REBASE(pd->entries[page_l2_idx(vaddr)]);
+        u64 e = pd->entries[page_l2_idx(vaddr)];
+
+        if (!(e & PT_FLAG_PRESENT))
+                return KPT_NOT_PRESENT;
+        if (e & PT_FLAG_PAGESIZE)
+                return NULL;
+
+        return PT_REBASE(e);
 }
 
 
@@ -163,21 +178,6 @@ void *kpt_get_phys(void *vaddr)
 }
 
 
-void kperm_init(void)
-{
-        const u64 dist = ((uintptr_t)_after_ro - (uintptr_t)_begin) / sizeof(PageTable);
-        PageTable *arr = (void *)_begin;
-
-        PageTable *l2 = kpt_get_l2(arr, NULL);
-
-        void *v;
-        for (u64 i = 0; i < dist; i++) {
-                v = &arr[i];
-                PageTable *l1 = kpt_get_l1(v, l2);
-                l1->entries[page_l1_idx(v)] &= ~PT_FLAG_WRITABLE;
-        }
-}
-
 
 void virt_map_page(void *vaddr)
 {
@@ -201,6 +201,14 @@ void virt_unmap_page(void *vaddr)
 }
 
 
+
+void *kreserve_frames(page_frame_t *frame, u64 frame_count) 
+{
+
+}
+
+
+
 void kstack_guard_init(void)
 {
         virt_unmap_page((void *)kstack_guard);
@@ -208,6 +216,20 @@ void kstack_guard_init(void)
 }
 
 
+void kperm_init(void)
+{
+        const u64 dist = ((uintptr_t)_after_ro - (uintptr_t)_begin) / sizeof(PageTable);
+        PageTable *arr = (void *)_begin;
+
+        PageTable *l2 = kpt_get_l2(arr, NULL);
+
+        void *v;
+        for (u64 i = 0; i < dist; i++) {
+                v = &arr[i];
+                PageTable *l1 = kpt_get_l1(v, l2);
+                l1->entries[page_l1_idx(v)] &= ~PT_FLAG_WRITABLE;
+        }
+}
 
 
 
@@ -241,8 +263,14 @@ void physmap_init(mmap_t *map)
                         if (e->addr <= (u64)_kphys_start 
                                         && (u64)kend <= e->addr + e->len)
                         {
-                                PHYS_CORE->phypool.region_addr[bmi] = (u64)((u8 *)e->addr + (u64)(kend - e->addr));
-                                PHYS_CORE->phypool.region_size[bmi] = e->len - ksize;
+                                void *base = (void *)((u8 *)e->addr + (u64)(kend - e->addr));
+                                u64 len = e->len - ksize;
+
+                                PHYS_CORE->phypool.region_addr[bmi] = (u64)base;
+                                PHYS_CORE->phypool.region_size[bmi] = len;
+
+                                /* kmem early init relies on an already mapped address space. */
+                                kmem_early_pf_init(base, len);
                         } else {
                                 PHYS_CORE->phypool.region_addr[bmi] = e->addr;
                                 PHYS_CORE->phypool.region_size[bmi] = e->len;

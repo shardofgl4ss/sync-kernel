@@ -46,7 +46,8 @@ _Static_assert(sizeof(struct kpage_core) == PAGESIZE,
 extern struct kpage_core *PHYS_CORE;
 
 
-extern void kmem_early_pf_init(void *base, size_t len);
+/* kmem early init relies on an already mapped address space. */
+extern void kmem_early_pf_init(void *pa_base, u64 bytes);
 extern void kmem_pf_init(void);
 
 

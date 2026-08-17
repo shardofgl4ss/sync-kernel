@@ -10,9 +10,11 @@
 #include "drivers/vga.h"
 
 
-_Noreturn void panic(void)
+_Noreturn void panic(char *str)
 {
 	vga_setcolor(VGA_COLOR_RED, VGA_COLOR_BLACK);
+	puts(str);
+	puts("\n");
 	puts("\n----- KERNEL PANIC -----\n");
 	x86_cli();
 	for (;;) {

@@ -46,6 +46,8 @@ extern u64 LOAD_ADDR;
  * bytes is rounded up to multiple of pagesize. *
  * zero is a valid type for standard pages.     */
 extern void *kalloc_addrspace(void *phys, usize bytes, enum addrspace_alloc_type type);
+extern void *kreserve_frames(page_frame_t *frame, u64 frame_count);
+
 
 extern void kpage_init(void *mmap);
 
