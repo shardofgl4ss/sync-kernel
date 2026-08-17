@@ -26,9 +26,26 @@ typedef enum {
 } PT_FLAG_BITS;
 
 
+enum addrspace_alloc_type {
+	ADDRSPACE_ALLOC_TYPE_4K = 0,
+	// 2MiB pages.
+	ADDRSPACE_ALLOC_TYPE_2M = 1,
+	// 1GiB pages.
+	ADDRSPACE_ALLOC_TYPE_1G = 2,
+}
 
-static constexpr int KERN_START_MEMB    = 131072;
+
+static constexpr int KERN_START_MEMB = 131072;
 extern u64 LOAD_ADDR;
+
+
+/* allocates a addrspace of size bytes,         *
+ * returns KPAGE_ERR on error,                  *
+ * or a valid ptr to address space on success.  *
+ * phys is rounded down to nearest page size,   *
+ * bytes is rounded up to multiple of pagesize. *
+ * zero is a valid type for standard pages.     */
+extern void *kalloc_addrspace(void *phys, usize bytes, enum addrspace_alloc_type type);
 
 extern void kpage_init(void *mmap);
 

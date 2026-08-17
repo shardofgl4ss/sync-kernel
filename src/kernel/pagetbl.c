@@ -163,23 +163,6 @@ void *kpt_get_phys(void *vaddr)
 }
 
 
-void kpt_uhalf_init(void)
-{
-        // extern PageTable _PAGE_PML4;
-        // extern PageTable _PAGE_PDPT;
-        // extern PageTable _PAGE_PD;
-        // extern PageTable _PAGE_PT[PAGE_PT_COUNT];
-        //
-        // memcpy(&KPAGETBL_L4, &_PAGE_PML4, sizeof(PageTable));
-        // memcpy(&KPAGETBL_L3, &_PAGE_PDPT, sizeof(PageTable));
-        // memcpy(&KPAGETBL_L2, &_PAGE_PD, sizeof(PageTable));
-        // memcpy(KPAGETBL_L1, _PAGE_PT, sizeof(PageTable) * PAGE_PT_COUNT);
-        //
-        // // unmapping the 2mb identity map region.
-        // // vga memory will have to be remapped.
-        // KPAGETBL_L3.entries[0] &= ~(PT_FLAG_PRESENT | PT_FLAG_PAGESIZE);
-}
-
 void kperm_init(void)
 {
         const u64 dist = ((uintptr_t)_after_ro - (uintptr_t)_begin) / sizeof(PageTable);
@@ -279,7 +262,6 @@ void kpage_init(void *maphdr)
 {
         mmap_t *map = maphdr;
 
-        kpt_uhalf_init();
         kstack_guard_init();
         kperm_init();
         physmap_init(map);

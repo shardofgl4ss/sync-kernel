@@ -31,8 +31,8 @@ typedef struct phys_mem_rpool {
 
 typedef struct kmem_region {
         page_frame_t *top;
-        u16 max_frames;
-        u16 region;
+        u32 max_frames;
+        u32 region;
 } memory_region_t;
 
 struct kpage_core {
@@ -43,10 +43,10 @@ struct kpage_core {
 _Static_assert(sizeof(struct kpage_core) == PAGESIZE,
                 "kpage_core not equal to size of page!\n");
 
-
 extern struct kpage_core *PHYS_CORE;
 
 
+extern void kmem_early_pf_init(void *base, size_t len);
 extern void kmem_pf_init(void);
 
 
