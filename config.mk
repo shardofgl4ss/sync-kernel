@@ -10,7 +10,7 @@ DEBUG_FLAGS		:= -Og -ggdb3 -Wa,-g -Wl,-g
 REL_FLAGS		:= -O2 -Wl,-s
 
 C_STD			:= c2x
-CFLAGS_KERNELSPACE	:= -mno-red-zone -fno-plt
+CFLAGS_KERNELSPACE	:= -mno-red-zone -fno-plt -mcmodel=kernel -fno-pic
 CFLAGS_STANDALONE	:= -ffreestanding -fno-builtin -fno-stack-protector -nostdinc -isystem $(shell $(CC) -print-file-name=include)
 CFLAGS_COMMON		:= -Wall -Wextra -fcf-protection=none -fno-omit-frame-pointer -fno-strict-aliasing
 LDFLAGS			:= -no-pie -nostdlib -z noexecstack

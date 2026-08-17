@@ -103,7 +103,6 @@ SECTIONS
         . += 0x1000;
         kstack_guard = .;
 
-        /* kstack_top = . + 8388608; */
         . += 2M;
         kstack_top = .;
 

@@ -131,7 +131,9 @@ void chk_avail_mem(struct multiboot_tag_mmap *map)
                 const u8 *entry_start = (u8 *)e->addr;
                 const u8 *entry_end = (u8 *)e->addr + e->len;
 
-                if (entry_start <= (u8 *)_kphys_start && (u8 *)_kphys_end < entry_end) {
+                if (entry_start <= (u8 *)_kphys_start 
+                                && (u8 *)_kphys_end + KERN_START_MEMB < entry_end) 
+                {
                         if ((u8 *)_kphys_end + KERN_START_MEMB > entry_end) {
                                 die();
                         }
@@ -189,6 +191,8 @@ void init_higher_half(void)
         const u64 kernsz = ((u64)_kphys_end + KERN_START_MEMB) - (u64)_kphys_start;
         const u64 kern_l1_count = ((kernsz + (PAGE_L1_MEM - 1)) & ~(PAGE_L1_MEM - 1)) / PAGE_L1_MEM;
 
+        /* dummy frame to allow higher half kernel use of _kheap directly for bootstrap. */
+        alloc_frame();
         PageTable *l4 = alloc_frame();
         PageTable *l3 = alloc_frame();
         PageTable *l2 = alloc_frame();

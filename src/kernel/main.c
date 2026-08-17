@@ -1,8 +1,5 @@
 #include "main.h"
 
-// Reminder: The space where the kernel is located
-// only has 640KB of space before colliding with BIOS data.
-
 #include "io.h"
 #include "irq.h"
 #include "kinit.h"
@@ -12,6 +9,7 @@
 #include "idt.h"
 #include "pagetbl.h"
 #include "panic.h"
+#include "kmem.h"
 
 #include "drivers/vga.h"
 
@@ -25,6 +23,7 @@ _Noreturn void kidle(void)
 void kernel_main(void *mmap)
 {
         kpage_init(mmap);
+        kmem_pf_init();
         kern_gdt_init();
         isr_init();
         idt_init();

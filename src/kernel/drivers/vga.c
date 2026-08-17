@@ -39,7 +39,7 @@ static struct kvga_term {
 
 
 __attribute__((section(".vga"))) //
-volatile static vga_cell_t VGA_OUT[VGA_CELLS];
+static volatile vga_cell_t VGA_OUT[VGA_CELLS];
 
 
 static inline enum vga_color vga_set_cell_color(const enum vga_color fg,

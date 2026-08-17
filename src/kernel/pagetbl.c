@@ -1,5 +1,6 @@
 #include "pagetbl.h"
 #include "types.h"
+#include "kmem.h"
 #include "kstring.h"
 
 #include "multiboot2.h"
@@ -13,50 +14,13 @@ extern char kstack_guard[];
 extern char kstack_top[];
 extern char _kheap[];
 
-#define _CACHEALIGN     __attribute__((aligned(64)))
 #define _Nullable
 #define _Nonnull
 
 #define PHYSMAP         ((u64)KERNEL_OFFSET)
 
-// #define _KPAGE_         __attribute__((section(".kern_pt")))
 
-
-// the kernel just dies if there are more then 256 memory regions.
-// it shouldn't ever happen anyway, even in huge memory systems.
-#define KPG_MAX_REGIONS         4
-#define REGION_TERMINATOR       ((void *)-1)
-
-struct phys_mem_rpool {
-        u64 region_size[sizeof(u64) * KPG_MAX_REGIONS];
-        u64 region_addr[sizeof(u64) * KPG_MAX_REGIONS];
-        // bitmap of each region for use in above arrays.
-        u64 region_bmap[KPG_MAX_REGIONS];
-        // actual region max
-        int regions;
-} _CACHEALIGN;
-
-
-
-struct page_frame_t {
-        struct page_frame_t *next;
-} _PAGEALIGNED;
-
-
-struct kpage_core {
-        struct phys_mem_rpool rpool;
-} _PAGEALIGNED;
-_Static_assert(sizeof(struct kpage_core) == PAGESIZE,
-                "kpage_core not equal to size of page!\n");
-
-
-static struct kpage_core *MASTER_PAGE = NULL;
-
-
-// _KPAGE_ PageTable KPAGETBL_L4;
-// _KPAGE_ PageTable KPAGETBL_L3;
-// _KPAGE_ PageTable KPAGETBL_L2;
-// _KPAGE_ PageTable KPAGETBL_L1[PAGE_PT_COUNT];
+extern struct kpage_core *PHYS_CORE;
 
 
 /* linear mapping only. */
@@ -219,7 +183,7 @@ void kpt_uhalf_init(void)
 void kperm_init(void)
 {
         const u64 dist = ((uintptr_t)_after_ro - (uintptr_t)_begin) / sizeof(PageTable);
-        struct page_frame_t *arr = (void *)_begin;
+        PageTable *arr = (void *)_begin;
 
         PageTable *l2 = kpt_get_l2(arr, NULL);
 
@@ -234,7 +198,7 @@ void kperm_init(void)
 
 void virt_map_page(void *vaddr)
 {
-
+        (void)vaddr;
 }
 
 
@@ -260,35 +224,48 @@ void kstack_guard_init(void)
         virt_unmap_page((void *)kstack_top);
 }
 
+
+
+
+
 void physmap_init(mmap_t *map) 
 {
-        void *first_pg = (void *)((u8 *)_kheap + KERN_START_MEMB);
+        void *first_pg = (void *)((u8 *)_kheap);
         u64 valign = PAGE_ALIGNDOWN((u64)first_pg);
         void *v = (void *)valign;
 
-        PageTable *l4 = kpt_get_l4();
-        PageTable *l3 = kpt_get_l3(v, l4);
-        PageTable *l2 = kpt_get_l2(v, l3);
-        PageTable *l1 = kpt_get_l1(v, l2);
-
+        PageTable *l1 = kpt_get_l1(v, NULL);
         volatile u64 *restrict pte = &l1->entries[page_l1_idx(v)];
-
-
         *pte = ((u64)virt_to_phys(first_pg)) | PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
 
-        MASTER_PAGE = first_pg;
-        memset(MASTER_PAGE, 0, PAGESIZE);
+        PHYS_CORE = first_pg;
+        memset(PHYS_CORE, 0, PAGESIZE);
 
         const u8 *end = (u8 *)map + map->size;
-        int bmi = 0;
 
+        extern char _kphys_start[];
+        extern char _kphys_end[];
+
+        const u8 *kend = (u8 *)_kphys_end + KERN_START_MEMB;
+        const usize ksize = kend - (u8 *)_kphys_start;
+
+        int bmi = 0;
         for (u8 *p = (u8 *)map + sizeof(*map); p < end; p += map->entry_size) {
                 const struct multiboot_mmap_entry *e = (void *)p;
                 if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
-                        MASTER_PAGE->rpool.region_addr[bmi] = e->addr;
-                        MASTER_PAGE->rpool.region_size[bmi] = e->len;
 
-                        MASTER_PAGE->rpool.regions++;
+                        // for the kernel region itself we should put it after the kernel.
+                        if (e->addr <= (u64)_kphys_start 
+                                        && (u64)kend <= e->addr + e->len)
+                        {
+                                PHYS_CORE->phypool.region_addr[bmi] = (u64)((u8 *)e->addr + (u64)(kend - e->addr));
+                                PHYS_CORE->phypool.region_size[bmi] = e->len - ksize;
+                        } else {
+                                PHYS_CORE->phypool.region_addr[bmi] = e->addr;
+                                PHYS_CORE->phypool.region_size[bmi] = e->len;
+                        }
+
+                        PHYS_CORE->phypool.regions++;
                         bmi++;
                 }
         }
@@ -306,7 +283,6 @@ void kpage_init(void *maphdr)
         kstack_guard_init();
         kperm_init();
         physmap_init(map);
-
 }
 
 
