@@ -2,6 +2,10 @@
 So don't expect this to be done soon. I'm quite busy with it,
 but it is an entire kernel.
 
+I will personally try to make sure the kernel compiles properly without errors,
+before every push to the repo. At the moment, the kernel is nowhere near even usable,
+so do not expect pushes to have a usable kernel for now, it just will compile, it's 
+still a major WIP.
 
 That being said, if you want to try it,
 
