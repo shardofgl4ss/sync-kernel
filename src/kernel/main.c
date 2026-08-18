@@ -2,7 +2,6 @@
 
 #include "io.h"
 #include "irq.h"
-#include "kinit.h"
 #include "stdio.h"
 #include "gdt.h"
 #include "isr.h"
