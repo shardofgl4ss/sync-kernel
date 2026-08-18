@@ -6,11 +6,10 @@ KERNEL_OFFSET = 0xffffffff80000000;
 PHDRS
 {
         preinit PT_LOAD FLAGS(5);
-        pre_pt  PT_LOAD FLAGS(6);
+        pre_dat PT_LOAD FLAGS(6);
         text    PT_LOAD FLAGS(5);
         rodata  PT_LOAD FLAGS(4);
         data    PT_LOAD FLAGS(6);
-        /* pagetbl PT_LOAD FLAGS(6); */
 }
 
 
@@ -25,18 +24,29 @@ SECTIONS
         {
                 KEEP(*(.multiboot))
                 KEEP(*(.preinit))
-                KEEP(*(.preinit.*))
         } :preinit
 
-        .pt (NOLOAD) : ALIGN(0x1000) {
-                __PAGETABLE_START = .;
-                *(.pt)
-                __PAGETABLE_END = .;
-        } :pre_pt
+        .preinit.rodata : ALIGN(0x1000)
+        {
+                *(.preinit.rodata)
+        } :preinit
+
+        .preinit.data : ALIGN(0x1000)
+        {
+                *(.preinit.data)
+        } :pre_dat
+
+        .preinit.bss (NOLOAD) : ALIGN(0x1000)
+        {
+                *(.preinit.bss)
+
+                . = ALIGN(0x1000);
+
+                *(.preinit.pt)
+        } :pre_dat
 
         _preend = .;
 
-        /* . = KERNEL_OFFSET + _KERN_LMA; */
         . = ALIGN(0x1000);
         _KERN_LMA = .;
         _OFFS = 0x0;
@@ -106,7 +116,6 @@ SECTIONS
         . += 2M;
         kstack_top = .;
 
-        /* this makes kstack_top a guard page spot. */
         . = ALIGN(0x1000);
         . += 0x1000;
         _kphys_end = . - KERNEL_OFFSET;
@@ -118,7 +127,4 @@ SECTIONS
                 *(.eh_frame)
                 *(.eh_frame_hdr)
         }
-
-        /* there may be an eventual moment where 16KB of static space isn't enough. */
-        /* ASSERT(kstack_top - _begin <= PT_COUNT * 0x200000, "kernel size exceeds static PT count") */
 }

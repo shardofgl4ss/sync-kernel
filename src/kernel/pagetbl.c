@@ -7,29 +7,19 @@
 
 typedef struct multiboot_tag_mmap mmap_t;
 
-extern char KERNEL_OFFSET[];
-extern char _begin[];
-extern char _after_ro[];
-extern char kstack_guard[];
-extern char kstack_top[];
-extern char _kheap[];
+extern char             _begin[];
+extern char             _after_ro[];
+extern char             kstack_guard[];
+extern char             kstack_top[];
+extern char             _kheap[];
 
 #define _Nullable
 #define _Nonnull
 
 #define KPT_NOT_PRESENT ((void *)-2)
-#define PHYSMAP         ((u64)KERNEL_OFFSET)
 
 
 extern struct kpage_core *PHYS_CORE;
-
-
-/* linear mapping only. */
-__attribute__((const)) //
-static inline void *virt_to_phys(void *v) { return (void *)((u64)v - PHYSMAP); }
-/* linear mapping only. */
-__attribute__((const)) //
-static inline void *phys_to_virt(void *p) { return (void *)((u64)p + PHYSMAP); }
 
 
 
@@ -202,9 +192,14 @@ void virt_unmap_page(void *vaddr)
 
 
 
-void *kreserve_frames(page_frame_t *frame, u64 frame_count) 
-{
 
+void *kmap(void *phys, void *virt, u64 bytes, enum addrspace_alloc_type type)
+{
+        (void)phys;
+        (void)virt;
+        (void)bytes;
+        (void)type;
+        return NULL;
 }
 
 

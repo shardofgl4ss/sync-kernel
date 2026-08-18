@@ -348,7 +348,7 @@ GDT64_descriptor:
 # .type CODE_SEGMENT64, @object
 
 ##### Page tables #####
-.section .pt, "aw", @nobits
+.section .preinit.pt, "aw", @nobits
 .align 0x1000
         pagetable_L4:   .space 0x1000
         pagetable_L3:   .space 0x1000

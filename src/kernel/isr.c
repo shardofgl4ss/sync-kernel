@@ -181,7 +181,5 @@ void x64_isr_handler(const isr_regs *restrict regs)
 
 
 	vga_setcolor(VGA_COLOR_MAGENTA, VGA_COLOR_BLACK);
-	puts("interrupt received while interrupts were disabled, dying.\n");
-
-	panic();
+	panic("temporary");
 }

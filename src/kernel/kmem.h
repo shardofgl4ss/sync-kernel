@@ -17,7 +17,7 @@
 
 
 typedef struct _kpage_frame {
-        struct page_frame_t *next;
+        struct _kpage_frame *next;
 } _PAGEALIGNED page_frame_t;
 
 typedef struct phys_mem_rpool {
@@ -32,7 +32,7 @@ typedef struct phys_mem_rpool {
 typedef struct kmem_region {
         page_frame_t *top;
         u32 max_frames;
-        u32 region;
+        u32 idx;
 } memory_region_t;
 
 struct kpage_core {

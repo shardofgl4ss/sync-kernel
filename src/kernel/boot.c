@@ -1,5 +1,8 @@
+#include "boot.h"
+
 #include "types.h"
 #include "pagetbl.h"
+#include "kmem.h"
 
 #include <multiboot2.h>
 
@@ -9,6 +12,7 @@ static constexpr int PAGE_L1_MEM = sizeof(PageTable) * 512;
 
 #define _PREINIT_               __attribute__((section(".preinit")))
 #define _PREINIT_DATA_          __attribute__((section(".preinit.data")))
+#define _PREINIT_BSS_           __attribute__((section(".preinit.bss")))
 
 
 typedef struct multiboot_mmap_entry mapentry_t;
@@ -16,19 +20,18 @@ extern _Noreturn void kernel_main(void *tmap);
 
 
 struct kframe_preinit {
+        struct multiboot_tag_mmap *map;
         void *base;
-        usize offset;
-        usize max_len;
-
-        // For now, this is hard coded, i hand calculated
-        // it to be 1 u32 for 128KiB. Just change to u64 if
-        // KERN_START_MEMB is increased to 256KiB.
-        u32 bmap;
+        page_frame_t *top;
+        u64 frames; /* basically just an offset/remaining. */
+        u64 max_frames;
 } _PAGEALIGNED;
 
 
-_PREINIT_DATA_
-struct kframe_preinit *pf = NULL;
+_PREINIT_BSS_
+struct kframe_preinit pf = {};
+_PREINIT_BSS_
+preinit_meminfo_t meminfo = {};
 
 extern char _kphys_start[];
 extern char _kphys_end[];
@@ -39,6 +42,16 @@ extern char kstack_top[];
 extern char _kheap[];
 
 constexpr uint8_t PT_FLAGS = PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
+
+
+_PREINIT_
+void pi_memset(void *dst, u8 c, usize n)
+{
+        u8 *dest = dst;
+        for (u32 i = 0; i < n; i++) {
+                dest[i] = c;
+        }
+}
 
 
 _PREINIT_
@@ -118,27 +131,43 @@ struct multiboot_tag *find_mbt(void *mbh, u32 type)
 
 
 _PREINIT_
-void chk_avail_mem(struct multiboot_tag_mmap *map)
+void find_memmap(struct multiboot_tag_mmap *map)
 {
 
         if (map == NULL) die();
 
         const u8 *end = (u8 *)map + map->size;
-        
+        const mapentry_t *e = NULL;
         /* The kernel needs at minimum 128kb. starting with less is shit. */
         for (u8 *p = (u8 *)map + sizeof(*map); p < end; p += map->entry_size) {
-                const mapentry_t *e = (void *)p;
+                e = (void *)p;
                 const u8 *entry_start = (u8 *)e->addr;
                 const u8 *entry_end = (u8 *)e->addr + e->len;
 
-                if (entry_start <= (u8 *)_kphys_start 
-                                && (u8 *)_kphys_end + KERN_START_MEMB < entry_end) 
-                {
-                        if ((u8 *)_kphys_end + KERN_START_MEMB > entry_end) {
-                                die();
-                        }
-                        return;
-                }
+                if (e->type != MULTIBOOT_MEMORY_AVAILABLE)
+                        continue;
+
+                if (entry_end - entry_start < KERN_START_MEMB)
+                        continue;
+
+                goto found_map;
+        }
+        die();
+
+found_map:
+        u64 ksize = (u64)_kphys_end - (u64)_kphys_start;
+
+        pf.map = map;
+        if (e->addr <= (u64)_kphys_start
+            && e->addr + e->len >= (u64)_kphys_end)
+        {
+                pf.frames = (e->len - ksize) / PAGESIZE;
+                pf.base = (void *)(e->addr + ksize);
+	} 
+        else 
+        {
+                pf.frames = e->len / PAGESIZE;
+                pf.base = (void *)e->addr;
         }
 }
 
@@ -146,16 +175,19 @@ void chk_avail_mem(struct multiboot_tag_mmap *map)
 _PREINIT_
 void alloc_preinit(void)
 {
-        void *heap_phys = (void *)((u64)_kheap - get_koffs());
-        pf = heap_phys;
+        page_frame_t *cur = pf.base;
+        page_frame_t *prev = NULL;
 
-        u64 *temp = heap_phys;
-        for (unsigned int i = 0; i < PAGESIZE / sizeof(u64); i++) {
-                temp[i] = 0ULL;
+        for (u64 i = 0; i < pf.frames - 1; i++) {
+                pi_memset(cur, 1, PAGESIZE);
+                cur->next = prev;
+                prev = cur;
+                cur++;
         }
+        pi_memset(cur, 1, PAGESIZE);
+        cur->next = prev;
 
-        pf->base = (void *)((u64)heap_phys + sizeof(*pf));
-        pf->max_len = KERN_START_MEMB - sizeof(*pf);
+        pf.top = cur;
 }
 
 
@@ -164,23 +196,15 @@ void alloc_preinit(void)
 _PREINIT_
 void *alloc_frame(void)
 {
-        if (pf == NULL) 
+        if (!pf.top)
                 return NULL;
-        // if preinit memory runs out, something else will die anyway.
-        if (pf->offset + PAGESIZE >= pf->max_len)
-                die();
 
-        void *a = (void *)((u8 *)pf->base + pf->offset);
-        pf->offset += PAGESIZE;
+        page_frame_t *p = pf.top;
+        pf.top = pf.top->next;
+        pi_memset(p, 0, PAGESIZE);
 
-        u64 *temp = a;
-        for (unsigned int i = 0; i < PAGESIZE / sizeof(u64); i++) {
-                temp[i] = 0ULL;
-        }
-
-        return a;
+        return p;
 }
-
 
 
 
@@ -191,17 +215,15 @@ void init_higher_half(void)
         const u64 kernsz = ((u64)_kphys_end + KERN_START_MEMB) - (u64)_kphys_start;
         const u64 kern_l1_count = ((kernsz + (PAGE_L1_MEM - 1)) & ~(PAGE_L1_MEM - 1)) / PAGE_L1_MEM;
 
-        /* dummy frame to allow higher half kernel use of _kheap directly for bootstrap. */
-        alloc_frame();
         PageTable *l4 = alloc_frame();
         PageTable *l3 = alloc_frame();
         PageTable *l2 = alloc_frame();
         PageTable *l2_low = alloc_frame();
-        PageTable *l1 = alloc_frame();
+        PageTable *l1[kern_l1_count];
 
         /* alloc_frame() is contiguous, so just calling it works. for now. */
-        for (unsigned int i = 0; i < kern_l1_count - 1; i++) {
-                alloc_frame();
+        for (unsigned int i = 0; i < kern_l1_count; i++) {
+                l1[i] = alloc_frame();
         }
 
         u64 koffs = get_koffs();
@@ -234,11 +256,11 @@ void init_higher_half(void)
         for (u64 i = 0; i < kern_l1_count; i++) {
                 for (u64 j = 0; j < sizeof(PageTable) / sizeof(u64); j++) {
                         u64 frame = ((i * 512) + j) * sizeof(PageTable);
-                        (l1 + i)->entries[j] = frame | PT_FLAGS;
+                        l1[i]->entries[j] = frame | PT_FLAGS;
                 }
 
                 // l2->entries[l2_index + i] = ((u64)(l1[i])) | PT_FLAGS;
-                l2->entries[l2_index + i] = ((u64)(l1 + i)) | PT_FLAGS;
+                l2->entries[l2_index + i] = ((u64)l1[i]) | PT_FLAGS;
         }
 
         set_pagetable(l4);
@@ -253,7 +275,7 @@ _Noreturn void start_kernel(void *mbh)
 {
         struct multiboot_tag_mmap *map = (void *)find_mbt(mbh, MULTIBOOT_TAG_TYPE_MMAP);
 
-        chk_avail_mem(map);
+        find_memmap(map);
         alloc_preinit();
         init_higher_half();
         call_main(map);

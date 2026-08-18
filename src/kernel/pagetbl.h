@@ -11,7 +11,9 @@ typedef struct x86_page_tbl {
 
 static_assert(sizeof(PageTable) == 0x1000, __FILE__ " PageTable size error\n");
 
+extern char             KERNEL_OFFSET[];
 #define KPAGE_ERR               ((void *)-1)
+#define PHYSMAP         ((u64)KERNEL_OFFSET)
 
 
 
@@ -32,21 +34,27 @@ enum addrspace_alloc_type {
 	ADDRSPACE_ALLOC_TYPE_2M = 1,
 	// 1GiB pages.
 	ADDRSPACE_ALLOC_TYPE_1G = 2,
-}
+};
 
 
 static constexpr int KERN_START_MEMB = 131072;
 extern u64 LOAD_ADDR;
 
 
-/* allocates a addrspace of size bytes,         *
+/* maps a region of size bytes,                 *
  * returns KPAGE_ERR on error,                  *
  * or a valid ptr to address space on success.  *
  * phys is rounded down to nearest page size,   *
  * bytes is rounded up to multiple of pagesize. *
  * zero is a valid type for standard pages.     */
-extern void *kalloc_addrspace(void *phys, usize bytes, enum addrspace_alloc_type type);
-extern void *kreserve_frames(page_frame_t *frame, u64 frame_count);
+extern void *kmap(void *phys, void *virt, u64 bytes, enum addrspace_alloc_type type);
+
+/* linear mapping only. */
+__attribute__((const)) //
+static inline void *virt_to_phys(void *v) { return (void *)((u64)v - PHYSMAP); }
+/* linear mapping only. */
+__attribute__((const)) //
+static inline void *phys_to_virt(void *p) { return (void *)((u64)p + PHYSMAP); }
 
 
 extern void kpage_init(void *mmap);
