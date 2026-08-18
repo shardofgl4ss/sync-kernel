@@ -5,12 +5,16 @@
 #include "kmem.h"
 #include "multiboot2.h"
 
-typedef struct {
+
+struct kframe_preinit {
         struct multiboot_tag_mmap *map;
-        page_frame_t *top;
         void *base;
-        u64 frames;
-        u64 addrlen;
-} preinit_meminfo_t;
+        page_frame_t *top;
+        u64 region_len;
+        u64 rem_frames;
+        u64 max_frames;
+} __attribute__((aligned(64)));
+
+extern struct kframe_preinit pf;
 
 #endif

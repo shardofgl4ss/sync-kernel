@@ -19,7 +19,9 @@ SECTIONS
 
         _kphys_start = .;
 
-        /* These two sections are in an identity map, no AT() */
+        /* These sections are in an identity map, no AT() */
+        __prebegin = .;
+
         .preinit : ALIGN(0x1000)
         {
                 KEEP(*(.multiboot))
@@ -45,7 +47,7 @@ SECTIONS
                 *(.preinit.pt)
         } :pre_dat
 
-        _preend = .;
+        __preend = .;
 
         . = ALIGN(0x1000);
         _KERN_LMA = .;
