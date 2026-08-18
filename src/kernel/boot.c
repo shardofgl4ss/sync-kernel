@@ -26,11 +26,11 @@ extern char kstack_top[];
 
 extern char _kheap[];
 
-constexpr uint8_t PT_FLAGS = PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
+static constexpr uint8_t PT_FLAGS = PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
 
 
 _PREINIT_
-void pi_memset(void *dst, u8 c, usize n)
+static void pi_memset(void *dst, u8 c, usize n)
 {
         u8 *dest = dst;
         for (u32 i = 0; i < n; i++) {
@@ -89,7 +89,7 @@ _Noreturn static void call_main()
 
 
 _PREINIT_
-struct multiboot_tag *find_mbt(void *mbh, u32 type)
+static struct multiboot_tag *find_mbt(void *mbh, u32 type)
 {
         struct multiboot_tag *t = (void *)((u8 *)mbh + 8);
 
@@ -106,7 +106,7 @@ struct multiboot_tag *find_mbt(void *mbh, u32 type)
 
 
 _PREINIT_
-void find_memmap(struct multiboot_tag_mmap *map)
+static void find_memmap(struct multiboot_tag_mmap *map)
 {
         static constexpr u64 highest_alloc_region = 1024 * 1024 * 1024;
 
@@ -155,7 +155,7 @@ found_map:
 
 
 _PREINIT_
-void alloc_preinit(void)
+static void alloc_preinit(void)
 {
         page_frame_t *cur = preinit_pfa.base;
         page_frame_t *prev = NULL;
@@ -176,7 +176,7 @@ void alloc_preinit(void)
 
 
 _PREINIT_
-void *alloc_frame(void)
+static void *alloc_frame(void)
 {
         if (!preinit_pfa.top)
                 return NULL;
@@ -194,7 +194,7 @@ void *alloc_frame(void)
 
 /* pagetables are the bane of my existence. */
 _PREINIT_
-void init_higher_half(void)
+static void init_higher_half(void)
 {
         constexpr usize PT_TOTAL_MEM = 1024 * 1024 * 2;
         const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
