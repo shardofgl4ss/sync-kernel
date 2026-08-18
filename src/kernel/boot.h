@@ -15,6 +15,6 @@ struct kframe_preinit {
         u64 max_frames;
 } __attribute__((aligned(64)));
 
-extern struct kframe_preinit pf;
+extern struct kframe_preinit preinit_pfa;
 
 #endif

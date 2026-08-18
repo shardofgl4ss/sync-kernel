@@ -16,7 +16,7 @@ typedef struct multiboot_mmap_entry mapentry_t;
 extern _Noreturn void kernel_main(void);
 
 _PREINIT_BSS_
-struct kframe_preinit pf = {};
+struct kframe_preinit preinit_pfa = {};
 
 extern char _kphys_start[];
 extern char _kphys_end[];
@@ -138,29 +138,29 @@ void find_memmap(struct multiboot_tag_mmap *map)
 found_map:
         u64 ksize = (u64)_kphys_end - (u64)_kphys_start;
 
-        pf.map = map;
+        preinit_pfa.map = map;
         if (e->addr <= (u64)_kphys_start
             && e->addr + e->len >= (u64)_kphys_end)
         {
-                pf.max_frames = (e->len - ksize) / PAGESIZE;
-                pf.base = (void *)(e->addr + ksize);
+                preinit_pfa.max_frames = (e->len - ksize) / PAGESIZE;
+                preinit_pfa.base = (void *)(e->addr + ksize);
 	} 
         else 
         {
-                pf.max_frames = e->len / PAGESIZE;
-                pf.base = (void *)e->addr;
+                preinit_pfa.max_frames = e->len / PAGESIZE;
+                preinit_pfa.base = (void *)e->addr;
         }
-        pf.rem_frames = pf.max_frames;
+        preinit_pfa.rem_frames = preinit_pfa.max_frames;
 }
 
 
 _PREINIT_
 void alloc_preinit(void)
 {
-        page_frame_t *cur = pf.base;
+        page_frame_t *cur = preinit_pfa.base;
         page_frame_t *prev = NULL;
 
-        for (u64 i = 0; i < pf.rem_frames - 1; i++) {
+        for (u64 i = 0; i < preinit_pfa.rem_frames - 1; i++) {
                 pi_memset(cur, 1, PAGESIZE);
                 cur->next = prev;
                 prev = cur;
@@ -169,7 +169,7 @@ void alloc_preinit(void)
         pi_memset(cur, 1, PAGESIZE);
         cur->next = prev;
 
-        pf.top = cur;
+        preinit_pfa.top = cur;
 }
 
 
@@ -178,13 +178,13 @@ void alloc_preinit(void)
 _PREINIT_
 void *alloc_frame(void)
 {
-        if (!pf.top)
+        if (!preinit_pfa.top)
                 return NULL;
 
-        page_frame_t *p = pf.top;
-        pf.top = pf.top->next;
+        page_frame_t *p = preinit_pfa.top;
+        preinit_pfa.top = preinit_pfa.top->next;
         pi_memset(p, 0, PAGESIZE);
-        pf.rem_frames--;
+        preinit_pfa.rem_frames--;
 
         return p;
 }
