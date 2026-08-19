@@ -1,5 +1,6 @@
 #include "boot.h"
 
+#include "macros.h"
 #include "types.h"
 #include "pagetbl.h"
 #include "kmem.h"
@@ -110,7 +111,7 @@ static void find_memmap(struct multiboot_tag_mmap *map)
 {
         static constexpr u64 highest_alloc_region = 1024 * 1024 * 1024;
 
-        if (map == NULL) die();
+        if (unlikely(map == NULL)) die();
 
         const u8 *end = (u8 *)map + map->size;
         const mapentry_t *e = NULL;
@@ -178,7 +179,7 @@ static void alloc_preinit(void)
 _PREINIT_
 static void *alloc_frame(void)
 {
-        if (!preinit_pfa.top)
+        if (unlikely(!preinit_pfa.top))
                 return NULL;
 
         page_frame_t *p = preinit_pfa.top;

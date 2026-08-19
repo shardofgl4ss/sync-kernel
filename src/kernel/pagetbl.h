@@ -57,7 +57,7 @@ __attribute__((const)) //
 static inline void *phys_to_virt(void *p) { return (void *)((u64)p + PHYSMAP); }
 
 
-extern void kpage_init(void);
+extern void kalloc_init(void);
 
 
 #endif // _KERNEL_PAGETBL_H

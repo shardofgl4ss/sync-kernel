@@ -44,8 +44,10 @@
 #else
 // Non-assembler macros start here.
 
+#define likely(x)               __builtin_expect(!!(x), 1)
+#define unlikely(x)             __builtin_expect(!!(x), 0)
 
-#define _SY_PRIMITIVE        __attribute__((always_inline)) static inline
+#define _SY_PRIMITIVE           __attribute__((always_inline)) static inline
 
 
 #endif

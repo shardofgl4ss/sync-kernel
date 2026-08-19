@@ -183,7 +183,7 @@ void virt_map_page(void *vaddr)
 /* Unmaps the given 4kb memory region, rounded down to the nearest 4KB */
 void virt_unmap_page(void *vaddr)
 {
-        if (!vaddr) return;
+        if (unlikely(!vaddr)) return;
         usize valign = PAGE_ALIGNDOWN((usize)vaddr);
         void *v = (void *)valign;
 
@@ -289,10 +289,11 @@ void kperm_init(void)
 
 
 
-void kpage_init()
+void kalloc_init()
 {
         kstack_guard_init();
         kperm_init();
+        kmem_pf_init();
         // physmap_init(map);
 }
 

@@ -21,8 +21,7 @@ _Noreturn void kidle(void)
 
 _Noreturn void kernel_main(void)
 {
-        kpage_init();
-        kmem_pf_init();
+        kalloc_init();
         kern_gdt_init();
         isr_init();
         idt_init();
