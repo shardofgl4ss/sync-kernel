@@ -7,7 +7,7 @@ AS			?= $(TOOLCHAIN)-as
 OBJCOPY			?= $(TOOLCHAIN)-objcopy
  
 DEBUG_FLAGS		:= -Og -ggdb3 -Wa,-g -Wl,-g
-REL_FLAGS		:= -O2 -Wl,-s
+REL_FLAGS		:= -O3 -Wl,-s
 
 C_STD			:= c2x
 CFLAGS_KERNELSPACE	:= -mno-red-zone -fno-plt -mcmodel=kernel -fno-pic

@@ -4,6 +4,8 @@ PROJ_DIR		:= $(CURDIR)
 BUILD_DIR		:= build
 SRC_DIR			:= src
 
+BUILD_TYPE		?= debug
+
 OBJ_DIR			:= $(BUILD_DIR)/obj
 BIN_DIR			:= $(BUILD_DIR)/bin
 
@@ -28,7 +30,7 @@ SRCS			:= $(shell find $(SRC_DIR) -type f $(FIND_FLAGS_EXT))
 
 SRCS_KERNEL             := $(filter $(SRC_KERNEL_DIR)/%,$(SRCS))
 
-CFLAGS			:= $(CFLAGS_COMMON) $(CFLAGS_DEBUG) $(CFLAGS_STANDALONE) $(CFLAGS_KERNELSPACE) -std=$(C_STD)
+CFLAGS			:= $(CFLAGS_COMMON) $(CFLAGS_STANDALONE) $(CFLAGS_KERNELSPACE) -std=$(C_STD)
 
 # include			$(SRC_DIR)/module.mk
 
@@ -56,24 +58,32 @@ image: 		$(DISK_IMAGE)
 kernel: 	$(KERNEL_ELF) $(KERNEL_ELF)
 standalone:	$(GRUB_FILE)
 
+QEMU_UEFI		:= -drive if=pflash,format=raw,readonly=on,file=$(UEFI_CODE) \
+			   -drive if=pflash,format=raw,file=$(UEFI_VARS)
+
+QEMU_DISK 		:= -drive format=raw,file=$(DISK_IMAGE)
+
+QEMU_FLAGS		:= $(QEMU_UEFI) $(QEMU_DISK) -no-reboot -no-shutdown
+
+QEMU_KVM		?= 0
+ifeq ($(QEMU_KVM), 1)
+	QEMU_FLAGS += -cpu host -accel kvm
+endif
+
+
+ifeq ($(BUILD_TYPE), release)
+	CFLAGS += $(REL_FLAGS)
+else
+	CFLAGS += $(DEBUG_FLAGS)
+	QEMU_FLAGS += -s -S -d cpu_reset -debugcon stdio -global isa-debugcon.iobase=0xe9
+endif
+
+
 
 # KVM acceleration with host cpu make it impossible to debug with GDB.
 # But it *is* closer to true hardware behavior then base QEMU.
 run: $(DISK_IMAGE) $(UEFI_CODE) $(UEFI_VARS)
-	qemu-system-x86_64 \
-		-machine q35 \
-		-drive if=pflash,format=raw,readonly=on,file=$(UEFI_CODE) \
-		-drive if=pflash,format=raw,file=$(UEFI_VARS) \
-		-drive format=raw,file=$(DISK_IMAGE) \
-		-no-reboot \
-		-no-shutdown \
-		-debugcon stdio \
-		-global isa-debugcon.iobase=0xe9 \
-		-d cpu_reset \
-		-s -S
-		# -cpu host \
-		# -accel kvm
-
+	qemu-system-x86_64 $(QEMU_FLAGS)
 
 
 $(DISK_IMAGE): $(KERNEL_ELF) $(GRUB_FILE)
