@@ -1,6 +1,6 @@
 #include "pagetbl.h"
 #include "types.h"
-#include "kmem.h"
+#include "pframe.h"
 #include "kstring.h"
 
 #include "multiboot2.h"
@@ -35,32 +35,6 @@ static inline void tlb_invl_page(u64 vaddr)
 }
 
 
-
-__attribute__((const, always_inline)) //
-static inline u64 page_l4_idx(void *vaddr) { return (((u64)vaddr >> 39) & 0x1FF); }
-__attribute__((const, always_inline)) //
-static inline u64 page_l3_idx(void *vaddr) { return (((u64)vaddr >> 30) & 0x1FF); }
-__attribute__((const, always_inline)) //
-static inline u64 page_l2_idx(void *vaddr) { return (((u64)vaddr >> 21) & 0x1FF); }
-__attribute__((const, always_inline)) //
-static inline u64 page_l1_idx(void *vaddr) { return (((u64)vaddr >> 12) & 0x1FF); }
-__attribute__((const, always_inline)) //
-static inline u64 page_offs_idx(void *vaddr) { return ((u64)vaddr & 0xFFF); }
-__attribute__((const, always_inline)) //
-static inline void *page_phys_rebase(void *paddr, u64 shift, u64 mask)
-{
-        return (void *)((((u64)paddr >> shift) & mask) << shift);
-}
-
-
-#define BITRANGE_MASK(a, b)     ((1ULL << ((a) - (b) + 1ULL)) - 1ULL)
-constexpr u64 SHIFT_PGENTRY = 12;
-constexpr u64 BMASK_PGENTRY = BITRANGE_MASK(51, 12);
-
-#define PT_REBASE(p)            (void *)page_phys_rebase( \
-                (void *)(p), \
-                SHIFT_PGENTRY, \
-                BMASK_PGENTRY)
 
 
 static inline PageTable *kpt_get_l4(void)
@@ -237,54 +211,16 @@ void kperm_init(void)
 
 
 
-// void physmap_init(mmap_t *map) 
-// {
-//         void *first_pg = (void *)((u8 *)_kheap);
-//         u64 valign = PAGE_ALIGNDOWN((u64)first_pg);
-//         void *v = (void *)valign;
-//
-//         PageTable *l1 = kpt_get_l1(v, NULL);
-//         volatile u64 *restrict pte = &l1->entries[page_l1_idx(v)];
-//         *pte = ((u64)virt_to_phys(first_pg)) | PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
-//
-//         PHYS_CORE = first_pg;
-//         memset(PHYS_CORE, 0, PAGESIZE);
-//
-//         const u8 *end = (u8 *)map + map->size;
-//
-//         extern char _kphys_start[];
-//         extern char _kphys_end[];
-//
-//         const u8 *kend = (u8 *)_kphys_end + KERN_START_MEMB;
-//         const usize ksize = kend - (u8 *)_kphys_start;
-//
-//         int bmi = 0;
-//         for (u8 *p = (u8 *)map + sizeof(*map); p < end; p += map->entry_size) {
-//                 const struct multiboot_mmap_entry *e = (void *)p;
-//                 if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
-//
-//                         // for the kernel region itself we should put it after the kernel.
-//                         if (e->addr <= (u64)_kphys_start 
-//                                         && (u64)kend <= e->addr + e->len)
-//                         {
-//                                 void *base = (void *)((u8 *)e->addr + (u64)(kend - e->addr));
-//                                 u64 len = e->len - ksize;
-//
-//                                 PHYS_CORE->phypool.region_addr[bmi] = (u64)base;
-//                                 PHYS_CORE->phypool.region_size[bmi] = len;
-//
-//                                 /* kmem early init relies on an already mapped address space. */
-//                                 kmem_early_pf_init(base, len);
-//                         } else {
-//                                 PHYS_CORE->phypool.region_addr[bmi] = e->addr;
-//                                 PHYS_CORE->phypool.region_size[bmi] = e->len;
-//                         }
-//
-//                         PHYS_CORE->phypool.regions++;
-//                         bmi++;
-//                 }
-//         }
-// }
+/* frees a given area. maps the phys addresses to virtual memory if not present. */
+void kfree_frame(void *const phys, const usize count)
+{
+        if (unlikely(!phys)) {
+                return;
+        }
+
+        (void)phys;
+        (void)count;
+}
 
 
 
@@ -293,7 +229,9 @@ void kalloc_init()
 {
         kstack_guard_init();
         kperm_init();
-        kmem_pf_init();
+        kphys_alloc_init();
+
+        // kmem_pf_init();
         // physmap_init(map);
 }
 

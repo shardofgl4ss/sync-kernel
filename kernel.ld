@@ -1,7 +1,8 @@
 ENTRY(_start)
 
-KERNEL_OFFSET = 0xffffffff80000000;
-/* PT_COUNT = 8; */
+KERNEL_OFFSET = 0xFFFFFFFF80000000; /* kernel code offset. */
+KERNEL_IOMMAP = 0xFFFF800000000000; /* io remapping base, 64TiB limit */
+KERNEL_PHMMAP = 0xFFFFC00000000000; /* direct physical mapping of all ram, 64TiB limit */
 
 PHDRS
 {

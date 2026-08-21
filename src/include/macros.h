@@ -48,7 +48,7 @@
 #define unlikely(x)             __builtin_expect(!!(x), 0)
 
 #define _SY_PRIMITIVE           __attribute__((always_inline)) static inline
-
+#define _const_                 __attribute__((const))
 
 #endif
 

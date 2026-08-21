@@ -8,7 +8,6 @@
 #include "idt.h"
 #include "pagetbl.h"
 #include "panic.h"
-#include "kmem.h"
 
 #include "drivers/vga.h"
 

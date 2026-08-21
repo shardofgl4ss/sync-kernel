@@ -3,7 +3,13 @@
 
 #include "types.h"
 #include "macros.h"
-#include "kmem.h"
+
+
+#define PAGESIZE                4096
+#define _PAGEALIGNED            __attribute__((aligned(PAGESIZE)))
+#define PAGE_ALIGNUP(x)         (((x) + (PAGESIZE - 1)) & ~(PAGESIZE - 1))
+#define PAGE_ALIGNDOWN(x)       ((x) & ~(PAGESIZE - 1))
+
 
 typedef struct x86_page_tbl {
         u64 entries[512];
@@ -11,10 +17,38 @@ typedef struct x86_page_tbl {
 
 static_assert(sizeof(PageTable) == 0x1000, __FILE__ " PageTable size error\n");
 
-extern char             KERNEL_OFFSET[];
-#define KPAGE_ERR               ((void *)-1)
-#define PHYSMAP         ((u64)KERNEL_OFFSET)
 
+__attribute__((const, always_inline)) //
+static inline u64 page_l4_idx(void *vaddr) { return (((u64)vaddr >> 39) & 0x1FF); }
+__attribute__((const, always_inline)) //
+static inline u64 page_l3_idx(void *vaddr) { return (((u64)vaddr >> 30) & 0x1FF); }
+__attribute__((const, always_inline)) //
+static inline u64 page_l2_idx(void *vaddr) { return (((u64)vaddr >> 21) & 0x1FF); }
+__attribute__((const, always_inline)) //
+static inline u64 page_l1_idx(void *vaddr) { return (((u64)vaddr >> 12) & 0x1FF); }
+__attribute__((const, always_inline)) //
+static inline u64 page_offs_idx(void *vaddr) { return ((u64)vaddr & 0xFFF); }
+__attribute__((const, always_inline)) //
+static inline void *page_phys_rebase(void *paddr, u64 shift, u64 mask)
+{
+        return (void *)((((u64)paddr >> shift) & mask) << shift);
+}
+
+
+
+#define BITRANGE_MASK(a, b)     ((1ULL << ((a) - (b) + 1ULL)) - 1ULL)
+#define PT_REBASE(p)            (void *)page_phys_rebase( \
+                (void *)(p), \
+                12, \
+                BITRANGE_MASK(51, 12))
+
+
+
+extern char                     KERNEL_OFFSET[];
+extern char                     KERNEL_IOMMAP[];
+extern char                     KERNEL_PHMMAP[];
+
+#define KPAGE_ERR               ((void *)-1)
 
 
 typedef enum {
@@ -37,8 +71,6 @@ enum addrspace_alloc_type {
 };
 
 
-static constexpr int KERN_START_MEMB = 131072;
-extern u64 LOAD_ADDR;
 
 
 /* maps a region of size bytes,                 *
@@ -49,12 +81,26 @@ extern u64 LOAD_ADDR;
  * zero is a valid type for standard pages.     */
 extern void *kmap(void *phys, void *virt, u64 bytes, enum addrspace_alloc_type type);
 
-/* linear mapping only. */
-__attribute__((const)) //
-static inline void *virt_to_phys(void *v) { return (void *)((u64)v - PHYSMAP); }
-/* linear mapping only. */
-__attribute__((const)) //
-static inline void *phys_to_virt(void *p) { return (void *)((u64)p + PHYSMAP); }
+
+
+
+/* linear mappings only. */
+
+/* phys/virt conversion of linear ram map (at 0xFFFF800000000000) */
+_const_ _SY_PRIMITIVE //
+void *virt_to_phys_pm(void *v) { return (void *)((u64)v - (u64)KERNEL_PHMMAP); }
+/* phys/virt conversion of linear ram map (at 0xFFFF800000000000) */
+_const_ _SY_PRIMITIVE //
+void *phys_to_virt_pm(void *p) { return (void *)((u64)p + (u64)KERNEL_PHMMAP); }
+/* phys/virt conversion of linear kernel code map (at 0xFFFFFFFF80000000) */
+_const_ _SY_PRIMITIVE //
+void *virt_to_phys_of(void *v) { return (void *)((u64)v - (u64)KERNEL_OFFSET); }
+/* phys/virt conversion of linear kernel code map (at 0xFFFFFFFF80000000) */
+_const_ _SY_PRIMITIVE //
+void *phys_to_virt_of(void *p) { return (void *)((u64)p + (u64)KERNEL_OFFSET); }
+
+/* probably don't need virt/phys conversion for io. */
+
 
 
 extern void kalloc_init(void);
