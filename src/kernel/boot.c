@@ -311,46 +311,6 @@ static void init_higher_half(void)
         set_pagetable(pml4);
         pt_init_kcode(pml4);
         pt_init_dram_map(pml4);
-        // constexpr usize PT_TOTAL_MEM = 1024 * 1024 * 2;
-        // const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
-        // const u64 kern_pt_count =
-        //                 ((kernsz + (PT_TOTAL_MEM - 1)) & ~(PT_TOTAL_MEM - 1)) / PT_TOTAL_MEM;
-        //
-        // PageTable *pml4 = alloc_frame();
-        // PageTable *pdpt = alloc_frame();
-        // PageTable *pd = alloc_frame();
-        // PageTable *pt[kern_pt_count];
-        //
-        // for (usize i = 0; i < kern_pt_count; i++) {
-        //         pt[i] = alloc_frame();
-        // }
-        //
-        // /* the kernel is linear mapped, so no special math here.        *
-        //  * makes it very easy to just do phys + KERNEL_OFFSET = virt.   */
-        // const u64 koffs  = (u64)KERNEL_OFFSET;
-        // const u64 pml4_i = (koffs >> 39) & 0x1ff;
-        // const u64 pdpt_i = (koffs >> 30) & 0x1ff;
-        // const u64 pd_i   = (koffs >> 21) & 0x1ff;
-        //
-        // pml4->entries[pml4_i] = (u64)pdpt | PT_FLAGS_RW;
-        // pdpt->entries[pdpt_i] = (u64)pd | PT_FLAGS_RW;
-        //
-        // /* 1gb identity map for 0x0. makes it simpler to remove later too. */
-        // pml4->entries[0] = (u64)pdpt | PT_FLAGS_RW;
-        // pdpt->entries[0] = (0x0ULL | PT_FLAGS_RW | PT_FLAG_PAGESIZE);
-        //
-        // static constexpr usize PT_ENTRIES = sizeof(PageTable) / sizeof(u64);
-        //
-        // u64 base = 0x0;
-        // for (usize i = 0; i < kern_pt_count; i++) {
-        //         pd->entries[pd_i + i] = (u64)pt[i] | PT_FLAGS_RW;
-        //         PageTable *ptp = pt[i];
-        //
-        //         for (usize j = 0; j < PT_ENTRIES; j++) {
-        //                 ptp->entries[j] = base | PT_FLAGS_RW;
-        //                 base += sizeof(PageTable);
-        //         }
-        // }
 }
 
 
