@@ -226,76 +226,132 @@ static void *alloc_frame(void)
 _PREINIT_ __attribute__((nonnull(1)))
 static PageTable *chk_pt_alloc(u64 *const restrict pte)
 {
-        PageTable *pt;
+        PageTable *pagetbl;
 
         if (!(*pte & PT_FLAG_PRESENT)) {
-                pt = alloc_frame();
-                *pte = (u64)pt | PT_FLAGS_RW;
+                pagetbl = alloc_frame();
+                *pte = (u64)pagetbl | PT_FLAGS_RW;
         } else {
-                pt = PT_REBASE(*pte);
+                pagetbl = PT_REBASE(*pte);
         }
 
-        return pt;
+        return pagetbl;
 }
 
 
 
 
-_PREINIT_ __attribute__((nonnull(1)))
-static void pt_init_dram_map(PageTable *const pml4)
+static constexpr usize PT_ENTRIES = 512;
+
+
+static constexpr usize PT_L1_ENTRYSZ = 4096;
+static constexpr usize PT_L2_ENTRYSZ = PT_L1_ENTRYSZ * PT_ENTRIES;
+static constexpr usize PT_L3_ENTRYSZ = PT_L2_ENTRYSZ * PT_ENTRIES;
+static constexpr usize PT_L4_ENTRYSZ = PT_L3_ENTRYSZ * PT_ENTRIES;
+
+static constexpr usize PT_L2_ENTRYMASK = PT_L2_ENTRYSZ - 1;
+static constexpr usize PT_L3_ENTRYMASK = PT_L3_ENTRYSZ - 1;
+static constexpr usize PT_L4_ENTRYMASK = PT_L4_ENTRYSZ - 1;
+
+_PREINIT_ __attribute__((nonnull(1, 2)))
+static void pt_map_fill_l1(PageTable *const restrict pt_l1, void **phys)
 {
-        (void)pml4;
+        for (usize i = 0; i < PT_ENTRIES; i++) {
+                pt_l1->entries[i] = ((u64)(*phys) | PT_FLAGS_RW);
+                *phys = ((u8 *)*phys) + PT_L1_ENTRYSZ;
+        }
+}
+
+
+
+
+_PREINIT_ __attribute__((nonnull(1)))
+static void pt_init_dram_map(PageTable *const pt_l4)
+{
+        extern char KERNEL_PHMMAP[];
+
+        void *dram_map_offs;
+
+        /* fuck you, compiler. */
+        __asm__ volatile (
+                "movabsq $KERNEL_PHMMAP, %0"
+                : "=r"((u64)dram_map_offs)
+                :
+                : "memory"
+        );
+
+        const usize ramsz = preinit_pfa.usable_ram;
+
+        const usize pt_l3_count = ((ramsz + PT_L4_ENTRYMASK) & ~PT_L4_ENTRYMASK) / PT_L4_ENTRYSZ;
+        const usize pt_l2_count = ((ramsz + PT_L3_ENTRYMASK) & ~PT_L3_ENTRYMASK) / PT_L3_ENTRYSZ;
+        const usize pt_l1_count = ((ramsz + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
+
+        void *physbase = (void *)0x0;
+
+        for (usize i = 0; i < pt_l3_count; i++) {
+                const u16 l4_entry_idx = page_l4_idx(dram_map_offs);
+                PageTable *pt_l3 = chk_pt_alloc(&pt_l4->entries[l4_entry_idx]);
+
+                for (usize j = 0; j < pt_l2_count; j++) {
+                        const u16 l3_entry_idx = page_l3_idx(dram_map_offs);
+                        PageTable *pt_l2 = chk_pt_alloc(&pt_l3->entries[l3_entry_idx]);
+
+                        for (usize k = 0; k < pt_l1_count; k++) {
+                                const u16 l2_entry_idx = page_l2_idx(dram_map_offs);
+                                PageTable *pt_l1 = chk_pt_alloc(&pt_l2->entries[l2_entry_idx]);
+
+                                pt_map_fill_l1(pt_l1, &physbase);
+                                dram_map_offs = ((u8 *)dram_map_offs) + PT_L2_ENTRYSZ;
+                        }
+                }
+        }
 }
 _PREINIT_ __attribute__((nonnull(1)))
-static void pt_init_kcode(PageTable *const pml4)
+static void pt_init_kcode(PageTable *const pt_l4)
 {
         /* this is basically just another direct map, --------- *
          * but it only goes upto the size of the kernel image.  */
-        constexpr usize PT_TOTAL_MEM = 1024 * 1024 * 2;
-        constexpr usize PT_MEM_MASK = PT_TOTAL_MEM - 1;
-        static constexpr usize PT_ENTRIES = 512;
-
         const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
-        const u64 kern_pt_count = ((kernsz + PT_MEM_MASK) & ~PT_MEM_MASK) / PT_TOTAL_MEM;
+        const u64 pt_l1_count = ((kernsz + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
 
-        if (kern_pt_count > PT_ENTRIES) die();
+        if (pt_l1_count > PT_ENTRIES) die();
 
         void *koffs = (void *)KERNEL_OFFSET;
 
-        u16 pml4_i = page_l4_idx(koffs);
-        u16 pdpt_i = page_l3_idx(koffs);
-        u16 pd_i = page_l2_idx(koffs);
+        u16 l4_entry_idx = page_l4_idx(koffs);
+        u16 l3_entry_idx = page_l3_idx(koffs);
+        u16 l2_entry_idx = page_l2_idx(koffs);
         
-        PageTable *pdpt = chk_pt_alloc(&pml4->entries[pml4_i]);
-        PageTable *pd = chk_pt_alloc(&pdpt->entries[pdpt_i]);
+        PageTable *pt_l3 = chk_pt_alloc(&pt_l4->entries[l4_entry_idx]);
+        PageTable *pt_l2 = chk_pt_alloc(&pt_l3->entries[l3_entry_idx]);
 
-        u64 base = 0x0;
+        u64 physbase = 0x0;
 
         /* This is hard coded to have only one PD for kernel code. It is about  *
          * 1gb. It should be enough. If not, it needs refactored. ------------- */
-        for (usize i = 0; i < kern_pt_count; i++) {
-                u64 *const restrict pd_e = &pd->entries[pd_i + i];
-                PageTable *pt = chk_pt_alloc(pd_e);
+        for (usize i = 0; i < pt_l1_count; i++) {
+                u64 *const restrict pd_e = &pt_l2->entries[l2_entry_idx + i];
+                PageTable *pt_l1 = chk_pt_alloc(pd_e);
 
-                *pd_e = (u64)pt | PT_FLAGS_RW;
+                *pd_e = (u64)pt_l1 | PT_FLAGS_RW;
                 for (usize j = 0; j < PT_ENTRIES; j++) {
-                        pt->entries[j] = base | PT_FLAGS_RW;
-                        base += sizeof(PageTable);
+                        pt_l1->entries[j] = physbase | PT_FLAGS_RW;
+                        physbase += sizeof(PageTable);
                 }
         }
 
         
 }
 _PREINIT_ __attribute__((nonnull(1)))
-static void pt_init_temp_identmap(PageTable *pml4)
+static void pt_init_temp_identmap(PageTable *pt_l4)
 {
-        u64 *const restrict pte = &pml4->entries[0];
-        PageTable *pdpt = chk_pt_alloc(pte);
+        u64 *const restrict pt_l4_entry = &pt_l4->entries[0];
+        PageTable *pt_l3 = chk_pt_alloc(pt_l4_entry);
 
-        if (unlikely(pdpt == KPAGE_ERR)) die();
+        if (unlikely(pt_l3 == KPAGE_ERR)) die();
 
-        pml4->entries[0] = (u64)pdpt | PT_FLAGS_RW;
-        pdpt->entries[0] = (0x0ULL | PT_FLAGS_RW | PT_FLAG_PAGESIZE);
+        pt_l4->entries[0] = (u64)pt_l3 | PT_FLAGS_RW;
+        pt_l3->entries[0] = (0x0ULL | PT_FLAGS_RW | PT_FLAG_PAGESIZE);
 }
 
 
@@ -305,12 +361,12 @@ static void pt_init_temp_identmap(PageTable *pml4)
 _PREINIT_
 static void init_higher_half(void)
 {
-        PageTable *pml4 = alloc_frame();
+        PageTable *pt_l4 = alloc_frame();
 
-        pt_init_temp_identmap(pml4);
-        set_pagetable(pml4);
-        pt_init_kcode(pml4);
-        pt_init_dram_map(pml4);
+        pt_init_temp_identmap(pt_l4);
+        set_pagetable(pt_l4);
+        pt_init_kcode(pt_l4);
+        pt_init_dram_map(pt_l4);
 }
 
 
