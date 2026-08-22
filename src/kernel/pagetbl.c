@@ -211,15 +211,17 @@ void kperm_init(void)
 
 
 
-/* frees a given area. maps the phys addresses to virtual memory if not present. */
-void kfree_frame(void *const phys, const usize count)
+static void unmap_preinit(void)
 {
-        if (unlikely(!phys)) {
-                return;
-        }
+        void *idmap = (void *)0x0;
 
-        (void)phys;
-        (void)count;
+        PageTable *pt_l4 = kpt_get_l4();
+        PageTable *pt_l3 = kpt_get_l3(idmap, pt_l4);
+
+        pt_l3->entries[0] &= ~PT_FLAG_PRESENT;
+        pt_l4->entries[0] &= ~PT_FLAG_PRESENT;
+        /* TODO unmap this dangling pagetable */
+        tlb_invl_page((u64)idmap);
 }
 
 
@@ -230,7 +232,7 @@ void kalloc_init()
         kstack_guard_init();
         kperm_init();
         kphys_alloc_init();
-
+        unmap_preinit_mem();
         // kmem_pf_init();
         // physmap_init(map);
 }
