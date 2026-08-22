@@ -91,15 +91,23 @@ _Noreturn static void trampoline()
 _PREINIT_
 static struct multiboot_tag *find_mbt(void *mbh, u32 type)
 {
-        struct multiboot_tag *t = (void *)((u8 *)mbh + 8);
+        u8 *p = (u8 *)mbh + 8;
+        u8 *end = mbh + *(u32 *)mbh;
 
-        while ((void *)t < (void *)((u8 *)mbh + (u32)((u64)mbh))) {
-                if (t->type == type) return t;
-                t = (void *)((u8 *)t + t->size);
+        while (t < end) {
+                struct multiboot_tag *tag = (void *)p;
 
-                if ((uintptr_t)t % 8 > 0) 
-                        t = (void *)((u8 *)t + 8 - ((uintptr_t)t % 8));
+                if (tag->type == type) {
+                        return tag;
+                } 
+
+                if (tag->type == MULTIBOOT_TAG_TYPE_END) {
+                        break;
+                }
+
+                p += (tag->size + 7) & ~7;
         }
+
         return NULL;
 }
 
@@ -273,21 +281,17 @@ static void pt_init_dram_map(PageTable *const pt_l4)
         void *dram_map_offs;
 
         /* fuck you, compiler. */
-        __asm__ volatile (
-                "movabsq $KERNEL_PHMMAP, %0"
-                : "=r"((u64)dram_map_offs)
-                :
-                : "memory"
-        );
+        __asm__ volatile ("movabsq $KERNEL_PHMMAP, %0" : "=r"((u64)dram_map_offs) : : "memory");
 
-        const usize ramsz = preinit_pfa.usable_ram;
+	const usize ramsz = preinit_pfa.usable_ram;
 
-        const usize pt_l3_count = ((ramsz + PT_L4_ENTRYMASK) & ~PT_L4_ENTRYMASK) / PT_L4_ENTRYSZ;
+	const usize pt_l3_count = ((ramsz + PT_L4_ENTRYMASK) & ~PT_L4_ENTRYMASK) / PT_L4_ENTRYSZ;
         const usize pt_l2_count = ((ramsz + PT_L3_ENTRYMASK) & ~PT_L3_ENTRYMASK) / PT_L3_ENTRYSZ;
         const usize pt_l1_count = ((ramsz + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
 
         void *physbase = (void *)0x0;
 
+        /* REMINDER: make these loops actually stop at 512 per pagetable */
         for (usize i = 0; i < pt_l3_count; i++) {
                 const u16 l4_entry_idx = page_l4_idx(dram_map_offs);
                 PageTable *pt_l3 = chk_pt_alloc(&pt_l4->entries[l4_entry_idx]);
