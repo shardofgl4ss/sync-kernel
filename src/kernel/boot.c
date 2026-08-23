@@ -97,7 +97,7 @@ static struct multiboot_tag *find_mbt(void *mbh, u32 type)
         u8 *p = (u8 *)mbh + 8;
         u8 *end = mbh + *(u32 *)mbh;
 
-        while (t < end) {
+        while (p < end) {
                 struct multiboot_tag *tag = (void *)p;
 
                 if (tag->type == type) {

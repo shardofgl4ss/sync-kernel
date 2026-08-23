@@ -214,7 +214,7 @@ void kperm_init(void)
 
 
 
-static void unmap_preinit(void)
+static void unmap_preinit_mem(void)
 {
         void *idmap = (void *)0x0;
 
