@@ -6,7 +6,7 @@
 ENTRY(_start)
 
 KERNEL_OFFSET = 0xFFFFFFFF80000000; /* kernel code offset. */
-KERNEL_IOMMAP = 0xFFFFC00000000000; /* io remapping base, 64TiB limit */
+KERNEL_VMMMAP = 0xFFFFC00000000000; /* io remapping base, 64TiB limit */
 KERNEL_PHMMAP = 0xFFFF800000000000; /* direct physical mapping of all ram, 64TiB limit */
 
 PHDRS
