@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "main.h"
-
 #include "io.h"
 #include "irq.h"
 #include "stdio.h"

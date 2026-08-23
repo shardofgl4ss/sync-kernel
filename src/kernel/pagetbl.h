@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_PAGETBL_H
-#define _KERNEL_PAGETBL_H
+#pragma once
 
 #include "types.h"
 #include "macros.h"
@@ -108,5 +107,3 @@ void *phys_to_virt_of(void *p) { return (void *)((u64)p + (u64)KERNEL_OFFSET); }
 
 extern void kalloc_init(void);
 
-
-#endif //_KERNEL_PAGETBL_H

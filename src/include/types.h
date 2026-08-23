@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_KTYPES_H
-#define _KERNEL_KTYPES_H
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -44,5 +43,3 @@ typedef u32 dword;
 typedef u16 word;
 typedef u8 byte;
 
-
-#endif

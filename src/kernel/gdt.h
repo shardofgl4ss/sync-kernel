@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_GDT_H
-#define _KERNEL_GDT_H
+#pragma once
 
 #include "types.h"
 
@@ -65,5 +64,3 @@ extern const u64 CODE_SEGMENT64;
 
 extern void kern_gdt_init(void);
 
-
-#endif // _KERNEL_GDT_H

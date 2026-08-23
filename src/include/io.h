@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_IO_H
-#define _KERNEL_IO_H
+#pragma once
 
 #include "types.h"
 
@@ -127,4 +126,3 @@ static inline void x86_hlt(void)
 	__asm__ volatile("hlt" ::: "memory");
 }
 
-#endif // _KERNEL_IO_H

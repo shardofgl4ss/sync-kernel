@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_IDT_H
-#define _KERNEL_IDT_H
+#pragma once
 
 #include "types.h"
 
@@ -36,5 +35,3 @@ extern void idt64_enablegate(int interrupt);
 extern void idt64_disablegate(int interrupt);
 extern void idt_init();
 
-
-#endif //_KERNEL_IDT_H

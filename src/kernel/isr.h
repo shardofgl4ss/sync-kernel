@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_ISR_H
-#define _KERNEL_ISR_H
+#pragma once
 
 #include "types.h"
 
@@ -49,4 +48,3 @@ extern void isr_init(void);
 
 extern void x64_isr_handler(const isr_regs *regs);
 
-#endif //_KERNEL_ISR_H

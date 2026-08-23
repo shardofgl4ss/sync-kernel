@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_VGA_H
-#define _KERNEL_VGA_H
+#pragma once
 
 enum vga_color {
 	VGA_COLOR_BLACK = 0,
@@ -52,4 +51,3 @@ extern void vga_clear_line(void);
 /* returns the current color */
 extern enum vga_color vga_get_color(void);
 
-#endif //_KERNEL_VGA_H

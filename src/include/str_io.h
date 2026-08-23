@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_STR_IO_H
-#define _KERNEL_STR_IO_H
+#pragma once
 
 #include "types.h"
 #include "macros.h"
@@ -108,6 +107,4 @@ _SY_PRIMITIVE unsigned char *rep_scasb(unsigned char *p,
 
 _SY_PRIMITIVE void x86_cld(void) { __asm__ volatile ("cld" ::: "cc"); }
 _SY_PRIMITIVE void x86_std(void) { __asm__ volatile ("std" ::: "cc"); }
-
-#endif
 

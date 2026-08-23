@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#ifndef _KERNEL_KSTRING_H
-#define _KERNEL_KSTRING_H
+#pragma once
 
 #include "types.h"
 
@@ -35,5 +34,3 @@ extern char *strchr(const char *s, int c);
 extern char *strrchr(const char *s, int c);
 extern char *strchrnul(const char *s, int c);
 
-
-#endif //_KERNEL_KSTRING_H
