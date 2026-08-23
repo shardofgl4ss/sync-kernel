@@ -1,9 +1,8 @@
-//
-// Created by SyncShard on 7/25/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_VGA_H
-#define KERNEL_PROJECT_VGA_H
+#ifndef _KERNEL_VGA_H
+#define _KERNEL_VGA_H
 
 enum vga_color {
 	VGA_COLOR_BLACK = 0,
@@ -53,4 +52,4 @@ extern void vga_clear_line(void);
 /* returns the current color */
 extern enum vga_color vga_get_color(void);
 
-#endif //KERNEL_PROJECT_VGA_H
+#endif //_KERNEL_VGA_H

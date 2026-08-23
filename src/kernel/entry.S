@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-3.0-only
+ * Copyright (C) 2026 Sync Shard
+ */
+
 .set MAGIC,     0xE85250D6
 .set MB_SIZE,   mb_end - mb_start
 

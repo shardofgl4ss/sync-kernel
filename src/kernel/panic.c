@@ -1,6 +1,5 @@
-//
-// Created by SyncShard on 7/28/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
 #include "panic.h"
 

@@ -1,9 +1,8 @@
-//
-// Created by SyncShard on 7/25/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_IDT_H
-#define KERNEL_PROJECT_IDT_H
+#ifndef _KERNEL_IDT_H
+#define _KERNEL_IDT_H
 
 #include "types.h"
 
@@ -38,4 +37,4 @@ extern void idt64_disablegate(int interrupt);
 extern void idt_init();
 
 
-#endif //KERNEL_PROJECT_IDT_H
+#endif //_KERNEL_IDT_H

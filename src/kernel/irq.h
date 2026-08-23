@@ -1,12 +1,11 @@
-//
-// Created by SyncShard on 7/26/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_IRQ_H
-#define KERNEL_PROJECT_IRQ_H
+#ifndef _KERNEL_IRQ_H
+#define _KERNEL_IRQ_H
 
 
-__attribute__((always_inline, used)) static inline void x86_cli(void)   { __asm__ volatile ("cli" ::: "memory"); }
-__attribute__((always_inline, used)) static inline void x86_sti(void)  { __asm__ volatile ("sti" ::: "memory"); }
+__attribute__((always_inline)) static inline void x86_cli(void)   { __asm__ volatile ("cli" ::: "memory"); }
+__attribute__((always_inline)) static inline void x86_sti(void)  { __asm__ volatile ("sti" ::: "memory"); }
 
-#endif //KERNEL_PROJECT_IRQ_H
+#endif //_KERNEL_IRQ_H

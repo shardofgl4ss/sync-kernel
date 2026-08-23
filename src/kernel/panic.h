@@ -1,10 +1,9 @@
-//
-// Created by SyncShard on 7/28/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_PANIC_H
-#define KERNEL_PROJECT_PANIC_H
+#ifndef _KERNEL_PANIC_H
+#define _KERNEL_PANIC_H
 
 extern _Noreturn void panic(char *panicmsg);
 
-#endif //KERNEL_PROJECT_PANIC_H
+#endif //_KERNEL_PANIC_H

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Sync Shard
+
 TOOLCHAIN		?= x86_64-elf
 
 CC			?= $(TOOLCHAIN)-gcc

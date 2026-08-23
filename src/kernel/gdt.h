@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
+
 #ifndef _KERNEL_GDT_H
 #define _KERNEL_GDT_H
 
 #include "types.h"
 
-// clang-format off
 enum GDT_BITS {
 	GDT_PRESENT    = 1 << 7,                /**< Loaded in memory.  */
 	GDT_DPL_RING0  = 0,                     /**< kernelspace        */
@@ -11,7 +13,6 @@ enum GDT_BITS {
 	GDT_BIT_DESC_S = 1 << 4,                /**< code/data          */
 	GDT_ACCESSED   = 1 << 0,                /**< used by cpu        */
 };
-// clang-format on
 
 enum GDT_BITS_DS {
 	GDT_BIT_DS_DIRECTION = 1 << 2,

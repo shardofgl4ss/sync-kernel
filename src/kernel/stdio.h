@@ -1,9 +1,8 @@
-//
-// Created by SyncShard on 7/27/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_STDIO_H
-#define KERNEL_PROJECT_STDIO_H
+#ifndef _KERNEL_STDIO_H
+#define _KERNEL_STDIO_H
 
 #include "types.h"
 
@@ -14,4 +13,4 @@ extern void write(const char *str, int len);
 extern void clear_line(void);
 extern void clear_screen(void);
 
-#endif //KERNEL_PROJECT_STDIO_H
+#endif //_KERNEL_STDIO_H

@@ -1,6 +1,5 @@
-//
-// Created by SyncShard on 7/25/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
 #include "vga.h"
 #include "kctype.h"

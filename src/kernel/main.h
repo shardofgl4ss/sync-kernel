@@ -1,9 +1,8 @@
-//
-// Created by SyncShard on 7/25/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_MAIN_H
-#define KERNEL_PROJECT_MAIN_H
+#ifndef _KERNEL_MAIN_H
+#define _KERNEL_MAIN_H
 
 
-#endif // KERNEL_PROJECT_MAIN_H
+#endif //_KERNEL_MAIN_H

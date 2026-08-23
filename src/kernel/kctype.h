@@ -1,9 +1,8 @@
-//
-// Created by SyncShard on 7/27/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_CTYPE_H
-#define KERNEL_PROJECT_CTYPE_H
+#ifndef _KERNEL_CTYPE_H
+#define _KERNEL_CTYPE_H
 
 #include "types.h"
 
@@ -48,4 +47,4 @@ _CTYPE bool isxdigit(const u8 c)
 	return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-#endif //KERNEL_PROJECT_CTYPE_H
+#endif //_KERNEL_CTYPE_H

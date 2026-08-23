@@ -1,9 +1,8 @@
-//
-// Created by SyncShard on 7/26/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_ISR_H
-#define KERNEL_PROJECT_ISR_H
+#ifndef _KERNEL_ISR_H
+#define _KERNEL_ISR_H
 
 #include "types.h"
 
@@ -50,4 +49,4 @@ extern void isr_init(void);
 
 extern void x64_isr_handler(const isr_regs *regs);
 
-#endif //KERNEL_PROJECT_ISR_H
+#endif //_KERNEL_ISR_H

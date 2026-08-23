@@ -1,5 +1,8 @@
-#ifndef SYOS_MACROS_H
-#define SYOS_MACROS_H
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
+
+#ifndef _KERNEL_MACROS_H
+#define _KERNEL_MACROS_H
 
 #ifdef __ASSEMBLER__
 // Assembler-specific macros start here.

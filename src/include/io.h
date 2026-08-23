@@ -1,9 +1,8 @@
-//
-// Created by SyncShard on 7/25/26.
-//
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Sync Shard
 
-#ifndef KERNEL_PROJECT_IO_H
-#define KERNEL_PROJECT_IO_H
+#ifndef _KERNEL_IO_H
+#define _KERNEL_IO_H
 
 #include "types.h"
 
@@ -128,4 +127,4 @@ static inline void x86_hlt(void)
 	__asm__ volatile("hlt" ::: "memory");
 }
 
-#endif //KERNEL_PROJECT_IO_H
+#endif // _KERNEL_IO_H
