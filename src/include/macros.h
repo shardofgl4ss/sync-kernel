@@ -39,11 +39,11 @@
 #define _used_                  __attribute__((used))
 
 #define _malloc_                __attribute__((malloc))
-#define _malloc_arg_(__VA_ARGS__)       __attribute__((malloc(__VA_ARGS__)))
 #define _aligned_(x)            __attribute__((aligned(x)))
 #define _alloc_align_(x)        __attribute__((alloc_align(x)))
-#define _assume_aligned_(__VA_ARGS__)   __attribute__((assume_aligned(__VA_ARGS__)))
-#define _nonnull_(__VA_ARGS__)  __attribute__((nonnull(__VA_ARGS__)))
+#define _assume_aligned_(...)   __attribute__((assume_aligned(__VA_ARGS__)))
+#define _malloc_arg_(...)       __attribute__((malloc(__VA_ARGS__)))
+#define _nonnull_(...)          __attribute__((nonnull(__VA_ARGS__)))
 
 #define _SY_PRIMITIVE           __attribute__((always_inline)) static inline
 
