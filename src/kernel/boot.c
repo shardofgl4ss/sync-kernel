@@ -264,15 +264,6 @@ static constexpr usize PT_L2_ENTRYMASK = PT_L2_ENTRYSZ - 1;
 static constexpr usize PT_L3_ENTRYMASK = PT_L3_ENTRYSZ - 1;
 static constexpr usize PT_L4_ENTRYMASK = PT_L4_ENTRYSZ - 1;
 
-_PREINIT_ __attribute__((nonnull(1, 2)))
-static void pt_map_fill_l1(PageTable *const restrict pt_l1, void **phys)
-{
-        for (usize i = 0; i < PT_ENTRIES; i++) {
-                pt_l1->entries[i] = ((u64)(*phys) | PT_FLAGS_RW);
-                *phys = ((u8 *)*phys) + PT_L1_ENTRYSZ;
-        }
-}
-
 
 
 
@@ -290,27 +281,26 @@ static void pt_init_dram_map(PageTable *const pt_l4)
 
 	const usize pt_l3_count = ((ramsz + PT_L4_ENTRYMASK) & ~PT_L4_ENTRYMASK) / PT_L4_ENTRYSZ;
         const usize pt_l2_count = ((ramsz + PT_L3_ENTRYMASK) & ~PT_L3_ENTRYMASK) / PT_L3_ENTRYSZ;
-        const usize pt_l1_count = ((ramsz + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
 
         void *physbase = (void *)0x0;
+        usize rem = pt_l2_count;
 
-        /* REMINDER: make these loops actually stop at 512 per pagetable */
+        /* granularity isn't needed for the ram map, so we just use huge pages. */
         for (usize i = 0; i < pt_l3_count; i++) {
                 const u16 l4_entry_idx = page_l4_idx(dram_map_offs);
                 PageTable *pt_l3 = chk_pt_alloc(&pt_l4->entries[l4_entry_idx]);
 
-                for (usize j = 0; j < pt_l2_count; j++) {
+                const usize cnt = rem > 512 ? 512 : rem;
+
+                for (usize j = 0; j < cnt; j++) {
                         const u16 l3_entry_idx = page_l3_idx(dram_map_offs);
-                        PageTable *pt_l2 = chk_pt_alloc(&pt_l3->entries[l3_entry_idx]);
+                        pt_l3->entries[l3_entry_idx] = ((u64)physbase | PT_FLAGS_RW);
 
-                        for (usize k = 0; k < pt_l1_count; k++) {
-                                const u16 l2_entry_idx = page_l2_idx(dram_map_offs);
-                                PageTable *pt_l1 = chk_pt_alloc(&pt_l2->entries[l2_entry_idx]);
-
-                                pt_map_fill_l1(pt_l1, &physbase);
-                                dram_map_offs = ((u8 *)dram_map_offs) + PT_L2_ENTRYSZ;
-                        }
+                        physbase += PT_L3_ENTRYSZ;
+                        dram_map_offs = (u8 *)dram_map_offs + PT_L3_ENTRYSZ;
                 }
+
+                rem -= cnt;
         }
 }
 _PREINIT_ __attribute__((nonnull(1)))
@@ -375,6 +365,8 @@ static void init_higher_half(void)
         pt_init_kcode(pt_l4);
         pt_init_dram_map(pt_l4);
 }
+
+
 
 
 _PREINIT_
