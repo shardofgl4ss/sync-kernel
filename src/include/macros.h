@@ -48,7 +48,7 @@
 #define _SY_PRIMITIVE           __attribute__((always_inline)) static inline
 
 #define _preinit_               __attribute__((section(".preinit.text")))
-#define _preinit_uninit_        __attribute__((section(".preinit.bss")))
+#define _preinit_zeroed_        __attribute__((section(".preinit.bss")))
 #define _preinit_data_          __attribute__((section(".preinit.data")))
 
 
