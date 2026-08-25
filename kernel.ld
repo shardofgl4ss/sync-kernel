@@ -31,7 +31,7 @@ SECTIONS
         .preinit : ALIGN(0x1000)
         {
                 KEEP(*(.multiboot))
-                KEEP(*(.preinit))
+                KEEP(*(.preinit.text))
         } :preinit
 
         .preinit.rodata : ALIGN(0x1000)
@@ -127,8 +127,6 @@ SECTIONS
         . = ALIGN(0x1000);
         . += 0x1000;
         _kphys_end = . - KERNEL_OFFSET;
-        _kheap = .;
-
 
         /DISCARD/ :
         {
