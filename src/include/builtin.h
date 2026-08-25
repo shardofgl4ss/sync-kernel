@@ -6,8 +6,17 @@
 #include "types.h"
 #include "macros.h"
 
-_SY_PRIMITIVE bool checked_add(uint64_t a, uint64_t b, uint64_t *res)
+
+_always_inline_
+static inline bool checked_add(uint64_t a, uint64_t b, uint64_t *res)
 {
         return __builtin_add_overflow(a, b, res);
+}
+
+
+_const_ _always_inline_
+static inline usize next_pow_two(usize n)
+{
+        return n == 1 ? 1 : 1 << (64 - __builtin_clzl(n - 1));
 }
 

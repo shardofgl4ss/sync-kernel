@@ -16,7 +16,7 @@
 
 #define _const_                 __attribute__((const))
 #define _pure_                  __attribute__((pure))
-#define _force_inline_          __attribute__((always_inline)) inline
+#define _always_inline_         __attribute__((always_inline))
 #define _no_inline_             __attribute__((noinline))
 #define _noreturn_              __attribute__((noreturn))
 #define _packed_                __attribute__((packed))
