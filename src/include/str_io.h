@@ -7,7 +7,8 @@
 #include "macros.h"
 
 /* returns ptr to last char, will increment *dest */
-_SY_PRIMITIVE unsigned char *rep_movsb(unsigned char *dest,
+_always_inline_
+static inline unsigned char *rep_movsb(unsigned char *dest,
                                        const unsigned char *src,
                                        size_t n,
                                        size_t *remaining)
@@ -24,7 +25,8 @@ _SY_PRIMITIVE unsigned char *rep_movsb(unsigned char *dest,
 
 
 /* returns ptr to last char, will increment *dest */
-_SY_PRIMITIVE unsigned char *repne_movsb(unsigned char *dest,
+_always_inline_
+static inline unsigned char *repne_movsb(unsigned char *dest,
                                          const unsigned char *src,
                                          size_t n,
                                          size_t *remaining)
@@ -41,7 +43,8 @@ _SY_PRIMITIVE unsigned char *repne_movsb(unsigned char *dest,
 
 
 /* returns ptr to last char, will increment *dest */
-_SY_PRIMITIVE unsigned char *rep_stosb(unsigned char *dest,
+_always_inline_
+static inline unsigned char *rep_stosb(unsigned char *dest,
                                        const unsigned char c,
                                        size_t n,
                                        size_t *remaining)
@@ -57,7 +60,8 @@ _SY_PRIMITIVE unsigned char *rep_stosb(unsigned char *dest,
 }
 
 
-_SY_PRIMITIVE unsigned char *repne_stosb(unsigned char *dest,
+_always_inline_
+static inline unsigned char *repne_stosb(unsigned char *dest,
                                          const unsigned char c,
                                          size_t n,
                                          size_t *remaining)
@@ -73,7 +77,8 @@ _SY_PRIMITIVE unsigned char *repne_stosb(unsigned char *dest,
 }
 
 
-_SY_PRIMITIVE unsigned char *repne_scasb(unsigned char *p,
+_always_inline_
+static inline unsigned char *repne_scasb(unsigned char *p,
                                          unsigned char v,
                                          size_t n,
                                          size_t *remaining)
@@ -89,7 +94,8 @@ _SY_PRIMITIVE unsigned char *repne_scasb(unsigned char *p,
 }
 
 
-_SY_PRIMITIVE unsigned char *rep_scasb(unsigned char *p,
+_always_inline_ 
+static inline unsigned char *rep_scasb(unsigned char *p,
                                        unsigned char v,
                                        size_t n,
                                        size_t *remaining)
@@ -105,6 +111,6 @@ _SY_PRIMITIVE unsigned char *rep_scasb(unsigned char *p,
 }
 
 
-_SY_PRIMITIVE void x86_cld(void) { __asm__ volatile ("cld" ::: "cc"); }
-_SY_PRIMITIVE void x86_std(void) { __asm__ volatile ("std" ::: "cc"); }
+_always_inline_ static inline void x86_cld(void) { __asm__ volatile ("cld" ::: "cc"); }
+_always_inline_ static inline void x86_std(void) { __asm__ volatile ("std" ::: "cc"); }
 
