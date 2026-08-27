@@ -4,9 +4,10 @@
 #pragma once
 
 #include "types.h"
+#include "macros.h"
 
 
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline void outb(u16 port, u8 val)
 {
 	__asm__ volatile (
@@ -18,7 +19,7 @@ static inline void outb(u16 port, u8 val)
 };
 
 
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline u8 inb(u16 port)
 {
 	u8 ret;
@@ -32,7 +33,7 @@ static inline u8 inb(u16 port)
 };
 
 
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline void outw(u16 port, u16 val)
 {
 	__asm__ volatile (
@@ -44,7 +45,7 @@ static inline void outw(u16 port, u16 val)
 };
 
 
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline u16 inw(u16 port)
 {
 	u16 ret;
@@ -58,7 +59,7 @@ static inline u16 inw(u16 port)
 };
 
 
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline void outl(u16 port, u32 val)
 {
 	__asm__ volatile (
@@ -70,7 +71,7 @@ static inline void outl(u16 port, u32 val)
 };
 
 
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline u32 inl(u16 port)
 {
 	u32 ret;
@@ -85,7 +86,7 @@ static inline u32 inl(u16 port)
 
 
 
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline void insb(u16 port, void *out, usize wc)
 {
         __asm__ volatile (
@@ -96,7 +97,7 @@ static inline void insb(u16 port, void *out, usize wc)
                 : "memory", "cc"
         );
 }
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline void insw(u16 port, void *out, usize wc)
 {
         __asm__ volatile (
@@ -107,7 +108,7 @@ static inline void insw(u16 port, void *out, usize wc)
                 : "memory", "cc"
         );
 }
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline void insl(u16 port, void *out, usize wc)
 {
         __asm__ volatile (
@@ -120,7 +121,7 @@ static inline void insl(u16 port, void *out, usize wc)
 }
 
 
-__attribute__((always_inline, unused)) //
+_always_inline_
 static inline void x86_hlt(void)
 {
 	__asm__ volatile("hlt" ::: "memory");
