@@ -13,23 +13,23 @@
 
 typedef uintptr_t phys_addr_t;
 
-typedef enum buddy_page_order {
-        BUDDY_ORDER_4K = 0,
-        BUDDY_ORDER_8K = 1,
-        BUDDY_ORDER_16K = 2,
-        BUDDY_ORDER_32K = 3,
-        BUDDY_ORDER_64K = 4,
-        BUDDY_ORDER_128K = 5,
-        BUDDY_ORDER_256K = 6,
-        BUDDY_ORDER_512K = 7,
-        BUDDY_ORDER_1024K = 8,
-        BUDDY_ORDER_2048K = 9,
-        BUDDY_ORDER_4096K = 10,
+typedef enum buddy_block_order {
+        BUDDY_ORDER_4K          = 0,
+        BUDDY_ORDER_8K          = 1,
+        BUDDY_ORDER_16K         = 2,
+        BUDDY_ORDER_32K         = 3,
+        BUDDY_ORDER_64K         = 4,
+        BUDDY_ORDER_128K        = 5,
+        BUDDY_ORDER_256K        = 6,
+        BUDDY_ORDER_512K        = 7,
+        BUDDY_ORDER_1024K       = 8,
+        BUDDY_ORDER_2048K       = 9,
+        BUDDY_ORDER_4096K       = 10,
 
 
-        BUDDY_ORDER_1M = 8,
-        BUDDY_ORDER_2M = 9,
-        BUDDY_ORDER_4M = 10,
+        BUDDY_ORDER_1M          = 8,
+        BUDDY_ORDER_2M          = 9,
+        BUDDY_ORDER_4M          = 10,
 } bud_order_t;
 
 
@@ -77,6 +77,7 @@ static constexpr i64 KPFRAME_REMAINING_SLAVE_SZ = PAGESIZE - sizeof(slave_buddy_
 typedef struct _kmaster_buddy {
         slave_buddy_t *regions[PFRAME_MAX_REGIONS];
 
+        // this isn't really needed, regions[] is terminated via (void *)-1, but its convenient.
         usize region_count;
         // total ram includes holes like NVS, BADRAM and reserved. (should this even exist?)
         usize total_ram;
@@ -88,7 +89,13 @@ typedef struct _kmaster_buddy {
 extern master_buddy_t MASTER_BUDDY;
 
 
-void *kbud_allocate(usize sz);
+/* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error. */
+void *kbud_alloc(const bud_order_t req)
+/* frees at most size PFRAME_MAX_ORDER - 1 */
 void kbud_free(void *addr, bud_order_t order);
+/* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error.
+ * prefer using kbud_alloc() instead, and track the order. */
+void *kbud_alloc_range(usize sz);
+/* prefer using kbud_free() instead, and track the order. */
 extern void kbud_free_range(const phys_addr_t phys, const usize len);
 

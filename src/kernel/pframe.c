@@ -316,6 +316,7 @@ static void *kbud_pop_head(slave_buddy_t *slave, bud_order_t order)
 
 
 
+/* prefer using kbud_free() instead, and track the order.  */
 void kbud_free_range(const phys_addr_t phys, const usize len)
 {
         phys_addr_t addr = PAGE_ALIGNDOWN((phys_addr_t)phys);
@@ -353,9 +354,10 @@ void kbud_free_range(const phys_addr_t phys, const usize len)
 
 
 
-/* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error. */
+/* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error.     *
+ * prefer using kbud_alloc() instead, and track the order.                      */
 _hot_
-void *kbud_allocate(usize sz)
+void *kbud_alloc_range(usize sz)
 {
         const usize rounded_sz = PAGE_ALIGNUP(sz);
         const u8 req = kbud_byte_order(rounded_sz);
@@ -403,7 +405,52 @@ void *kbud_allocate(usize sz)
 
 
 _hot_
-void kbud_free(void *addr, bud_order_t order)
+void *kbud_alloc(const bud_order_t req)
+{
+        if (req >= PFRAME_MAX_ORDER) {
+                return KPAGE_ERR;
+        }
+
+        for (usize i = 0; i < MASTER_BUDDY.region_count; i++) {
+                slave_buddy_t *s = MASTER_BUDDY.regions[i];
+                
+                if (unlikely(s == KPAGE_ERR)) {
+                        continue;
+                }
+
+                u8 order = req;
+                while (order < PFRAME_MAX_ORDER 
+                                && s->order_blk_cnt[order] == 0 
+                                && order < s->max_order) {
+                        order++;
+                }
+
+                if (order == PFRAME_MAX_ORDER || order < req) {
+                        continue;
+                }
+
+                void *addr = kbud_pop_head(s, order);
+
+                if (unlikely(addr == KPAGE_ERR)) continue;
+
+                while (order > req) {
+                        const phys_addr_t order_shift = (phys_addr_t)PAGESIZE << order++;
+                        void *buddy = (void *)((phys_addr_t)addr ^ order_shift);
+
+                        kbud_push(s, buddy, order);
+                }
+
+                return addr;
+        }
+
+        return KPAGE_ERR;
+}
+
+
+
+
+_hot_
+void kbud_free(void *addr, const bud_order_t order)
 {
         slave_buddy_t *s = find_valid_slave((phys_addr_t)addr);
 
