@@ -219,7 +219,7 @@ static inline bool kbuddy_bit_get(slave_buddy_t *s, phys_addr_t pfn, bud_order_t
 {
         const usize pidx = kbud_pair_idx(pfn, ord);
 
-        ASSERT(ord > s->max_order || pidx >= s->lut.maxbits[ord], 
+        ASSERT(ord <= s->max_order || pidx < s->lut.maxbits[ord], 
                "attempt to access invalid bit in kbuddy!");
 
         return (s->lut.bitmap_arr[ord][pidx >> 3] >> (pidx & 7)) & 1;
@@ -230,7 +230,7 @@ static inline bool kbuddy_bit_set(slave_buddy_t *s, phys_addr_t pfn, bud_order_t
 {
         const usize pidx = kbud_pair_idx(pfn, ord);
 
-        ASSERT(ord > s->max_order || pidx >= s->lut.maxbits[ord], 
+        ASSERT(ord <= s->max_order || pidx < s->lut.maxbits[ord], 
                "attempt to mutate invalid bit in kbuddy!");
 
         return (s->lut.bitmap_arr[ord][pidx >> 3] |= (u8)(1 << (pidx & 7)));
@@ -241,7 +241,7 @@ static inline bool kbuddy_bit_clr(slave_buddy_t *s, phys_addr_t pfn, bud_order_t
 {
         const usize pidx = kbud_pair_idx(pfn, ord);
 
-        ASSERT(ord > s->max_order || pidx >= s->lut.maxbits[ord], 
+        ASSERT(ord <= s->max_order || pidx < s->lut.maxbits[ord], 
                "attempt to mutate invalid bit in kbuddy!");
 
         return (s->lut.bitmap_arr[ord][pidx >> 3] &= (u8)~(1 << (pidx & 7)));
