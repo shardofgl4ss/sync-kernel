@@ -77,7 +77,7 @@ endif
 ifeq ($(BUILD_TYPE), release)
 	CFLAGS += $(REL_FLAGS)
 else
-	CFLAGS += $(DEBUG_FLAGS)
+	CFLAGS += $(DEBUG_FLAGS) -DDEBUG
 	QEMU_FLAGS += -s -S -d cpu_reset -debugcon stdio -global isa-debugcon.iobase=0xe9
 endif
 
