@@ -45,11 +45,16 @@
 #define _malloc_arg_(...)       __attribute__((malloc(__VA_ARGS__)))
 #define _nonnull_(...)          __attribute__((nonnull(__VA_ARGS__)))
 
-#define _SY_PRIMITIVE           __attribute__((always_inline)) static inline
-
 #define _preinit_               __attribute__((section(".preinit.text")))
 #define _preinit_zeroed_        __attribute__((section(".preinit.bss")))
 #define _preinit_data_          __attribute__((section(".preinit.data")))
+
+
+
+
+#define SY_ALIGN_UP(x, up_to)           (((x) + ((up_to) - 1)) & ~((up_to) - 1))
+#define SY_ALIGN_DOWN(x, down_to)       ((x) & ~((down_to) - 1))
+
 
 
 #else
