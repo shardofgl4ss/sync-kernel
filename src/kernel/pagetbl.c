@@ -234,8 +234,8 @@ void kalloc_init()
 {
         kstack_guard_init();
         kperm_init();
-        kphys_alloc_init();
-        unmap_preinit_mem();
+        // kphys_alloc_init();
+        // unmap_preinit_mem();
         // kmem_pf_init();
         // physmap_init(map);
 }
