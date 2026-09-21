@@ -35,9 +35,7 @@ typedef ssize_t isize;
  * level data type stuff. for me it makes more sense to *
  * refer to such bytes/words/qwords/etc, instead of --- *
  * ints/uints, even if they're the same. -------------- *
--* ---------------------------------------------------- * ------------- *
- * go learn assembly and CPU wordsizes if you don't know these. :P ---- *
--* ---------------------------------------------------------Sync Shard- */
+-* -----------------------------------------Sync Shard- */
 typedef u64 qword;
 typedef u32 dword;
 typedef u16 word;
