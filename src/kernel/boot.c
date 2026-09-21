@@ -6,8 +6,9 @@
 #include "macros.h"
 #include "types.h"
 #include "pagetbl.h"
-#include "pframe.h"
 #include "kstring.h"
+
+#include "mm/buddy.h"
 
 #include <multiboot2.h>
 
@@ -374,7 +375,7 @@ static void buddy_handoff(void)
                 physmem_pregion_t *r = preinit_pfa.region[i];
 
                 void *newbase = phys_to_virt_pm(r->base);
-                usize len = r->cur_frames * 4096;
+                usize len = r->cur_frames << 12;
 
                 pi_memset(newbase, 0, sizeof(slave_buddy_t));
                 kbud_free_range((phys_addr_t)newbase, len);

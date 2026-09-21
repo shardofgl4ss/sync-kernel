@@ -3,8 +3,9 @@
 
 #include "pagetbl.h"
 #include "types.h"
-#include "pframe.h"
 #include "kstring.h"
+
+#include "mm/buddy.h"
 
 #include "multiboot2.h"
 
@@ -230,14 +231,11 @@ static void unmap_preinit_mem(void)
 
 
 
-void kalloc_init()
+void kern_uhalf_init()
 {
         kstack_guard_init();
         kperm_init();
-        // kphys_alloc_init();
-        // unmap_preinit_mem();
-        // kmem_pf_init();
-        // physmap_init(map);
+        unmap_preinit_mem();
 }
 
 

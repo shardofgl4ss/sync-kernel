@@ -130,5 +130,5 @@ static inline void *phys_to_virt_of(void *p) { return (void *)((u64)p + get_kern
 
 
 
-extern void kalloc_init(void);
+extern void kern_uhalf_init(void);
 

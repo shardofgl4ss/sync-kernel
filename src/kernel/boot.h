@@ -5,8 +5,9 @@
 
 #include "macros.h"
 #include "types.h"
-#include "pframe.h"
 #include "multiboot2.h"
+
+#include "mm/buddy.h"
 
 typedef struct preinit_region {
         page_frame_t *top;
