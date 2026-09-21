@@ -11,6 +11,11 @@
 #define PFRAME_MAX_REGIONS      128
 #define PFRAME_MAX_ORDER        11
 
+/* phys_addr_t actually means an address from the direct map at --------------- *
+ * 0xFFFF800000000000, im just a bit lazy to change it, and ------------------- *
+ * dmap_addr_t sounds a lot more boring. for all uses of phys_addr_t, --------- *
+ * it means physical dmap addr, not true phys, cause 0x0 is unmapped. --------- *
+ * this does however mean for the kernel that phys is at 0xFFFF800000000000. -- */
 typedef uintptr_t phys_addr_t;
 
 typedef enum buddy_block_order {
@@ -45,7 +50,7 @@ typedef struct _kpage_frame {
 } _PAGEALIGNED page_frame_t;
 
 
-/* also known as the region header. this has approximately 3896 bytes of extra  *
+/* also known as the region header. this should have a boatload of extra ------ *
  * usable space at the time of writing this comment, for future expansion ----- */
 typedef struct _kslave_buddy {
         page_frame_t *free[PFRAME_MAX_ORDER];
@@ -90,12 +95,25 @@ extern master_buddy_t MASTER_BUDDY;
 
 
 /* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error. */
-void *kbud_alloc(const bud_order_t req)
+void *kbud_alloc(const bud_order_t req);
 /* frees at most size PFRAME_MAX_ORDER - 1 */
-void kbud_free(void *addr, bud_order_t order);
+void kbud_free(const phys_addr_t addr, const bud_order_t order);
 /* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error.
  * prefer using kbud_alloc() instead, and track the order. */
 void *kbud_alloc_range(usize sz);
 /* prefer using kbud_free() instead, and track the order. */
 extern void kbud_free_range(const phys_addr_t phys, const usize len);
+
+
+
+
+_const_
+static inline usize buddy_order_to_val(const bud_order_t ord)
+{
+        if (ord > PFRAME_MAX_ORDER - 1 || ord < 0) {
+                return 0;
+        }
+
+        return (usize)PAGESIZE << (usize)ord;
+}
 

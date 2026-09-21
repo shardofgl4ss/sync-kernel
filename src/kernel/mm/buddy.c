@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "pframe.h"
+#include "buddy.h"
 
 #include "boot.h"
 #include "kstring.h"
@@ -44,7 +44,7 @@ static inline usize kbud_order_idx(usize n)
 
 
 
-/* Call check_valid_sbuddy() instead during init. this only checks preceeding. */
+/* Call find_valid_slave() instead. this only checks preceeding. */
 static slave_buddy_t *find_buddy_slave(const phys_addr_t addr)
 {
         if (unlikely(MASTER_BUDDY.region_count == 0 
@@ -205,7 +205,7 @@ static inline usize kbud_pair_idx(const phys_addr_t pfn, bud_order_t ord)
 
 /* checks for a valid bit from pfn in slave, returns false if not valid */
 _reproducible_ _nonnull_(1)
-static inline bool kbuddy_bit_chk(slave_buddy_t *s, phys_addr_t pfn, bud_order_t ord)
+static inline bool buddy_bit_chk(slave_buddy_t *s, phys_addr_t pfn, bud_order_t ord)
 {
         if (ord > s->max_order) return false;
         const usize pidx = kbud_pair_idx(pfn, ord);
@@ -215,7 +215,7 @@ static inline bool kbuddy_bit_chk(slave_buddy_t *s, phys_addr_t pfn, bud_order_t
 }
 
 _reproducible_ _nonnull_(1)
-static inline bool kbuddy_bit_get(slave_buddy_t *s, phys_addr_t pfn, bud_order_t ord) 
+static inline bool buddy_bit_get(slave_buddy_t *s, phys_addr_t pfn, bud_order_t ord) 
 {
         const usize pidx = kbud_pair_idx(pfn, ord);
 
@@ -226,7 +226,7 @@ static inline bool kbuddy_bit_get(slave_buddy_t *s, phys_addr_t pfn, bud_order_t
 }
 
 _nonnull_(1)
-static inline bool kbuddy_bit_set(slave_buddy_t *s, phys_addr_t pfn, bud_order_t ord)
+static inline bool buddy_bit_set(slave_buddy_t *s, phys_addr_t pfn, bud_order_t ord)
 {
         const usize pidx = kbud_pair_idx(pfn, ord);
 
@@ -237,7 +237,7 @@ static inline bool kbuddy_bit_set(slave_buddy_t *s, phys_addr_t pfn, bud_order_t
 }
 
 _nonnull_(1)
-static inline bool kbuddy_bit_clr(slave_buddy_t *s, phys_addr_t pfn, bud_order_t ord)
+static inline bool buddy_bit_clr(slave_buddy_t *s, phys_addr_t pfn, bud_order_t ord)
 {
         const usize pidx = kbud_pair_idx(pfn, ord);
 
@@ -254,7 +254,7 @@ static inline bool kbuddy_bit_clr(slave_buddy_t *s, phys_addr_t pfn, bud_order_t
 static bool kbud_push(slave_buddy_t *slave, void *addr, bud_order_t order)
 {
         phys_addr_t pfn = kbud_pfnum((phys_addr_t)addr, slave);
-        if (unlikely(!kbuddy_bit_chk(slave, pfn, order))) {
+        if (unlikely(!buddy_bit_chk(slave, pfn, order))) {
                 return false;
         }
 
@@ -265,7 +265,7 @@ static bool kbud_push(slave_buddy_t *slave, void *addr, bud_order_t order)
         slave->free[order] = p;
         slave->order_blk_cnt[order]++;
 
-        kbuddy_bit_set(slave, pfn, order);
+        buddy_bit_set(slave, pfn, order);
 
         return true;
 }
@@ -274,7 +274,7 @@ static bool kbud_push(slave_buddy_t *slave, void *addr, bud_order_t order)
 static bool kbud_pop(slave_buddy_t *slave, void *addr, bud_order_t order)
 {
         phys_addr_t pfn = kbud_pfnum((phys_addr_t)addr, slave);
-        if (unlikely(!kbuddy_bit_chk(slave, pfn, order) 
+        if (unlikely(!buddy_bit_chk(slave, pfn, order) 
          || unlikely(slave->order_blk_cnt[order] == 0))) {
                 return false;
         }
@@ -289,7 +289,7 @@ static bool kbud_pop(slave_buddy_t *slave, void *addr, bud_order_t order)
         *cur = (*cur)->next;
         slave->order_blk_cnt[order]--;
 
-        kbuddy_bit_clr(slave, pfn, order);
+        buddy_bit_clr(slave, pfn, order);
 
         return true;
 }
@@ -300,7 +300,7 @@ static void *kbud_pop_head(slave_buddy_t *slave, bud_order_t order)
         page_frame_t *blk = slave->free[order];
 
         phys_addr_t pfn = kbud_pfnum((phys_addr_t)blk, slave);
-        if (unlikely(!kbuddy_bit_chk(slave, pfn, order))) {
+        if (unlikely(!buddy_bit_chk(slave, pfn, order))) {
                 return KPAGE_ERR;
         }
 
@@ -308,7 +308,7 @@ static void *kbud_pop_head(slave_buddy_t *slave, bud_order_t order)
         slave->free[order] = blk->next;
         slave->order_blk_cnt[order]--;
 
-        kbuddy_bit_clr(slave, pfn, order);
+        buddy_bit_clr(slave, pfn, order);
         
         return blk;
 }
@@ -356,7 +356,6 @@ void kbud_free_range(const phys_addr_t phys, const usize len)
 
 /* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error.     *
  * prefer using kbud_alloc() instead, and track the order.                      */
-_hot_
 void *kbud_alloc_range(usize sz)
 {
         const usize rounded_sz = PAGE_ALIGNUP(sz);
@@ -386,7 +385,9 @@ void *kbud_alloc_range(usize sz)
 
                 void *addr = kbud_pop_head(s, order);
 
-                if (unlikely(addr == KPAGE_ERR)) continue;
+                if (unlikely(addr == KPAGE_ERR)) {
+                        continue;
+                }
 
                 while (order > req) {
                         const phys_addr_t order_shift = (phys_addr_t)PAGESIZE << order++;
@@ -450,27 +451,27 @@ void *kbud_alloc(const bud_order_t req)
 
 
 _hot_
-void kbud_free(void *addr, const bud_order_t order)
+void kbud_free(const phys_addr_t addr, const bud_order_t order)
 {
-        slave_buddy_t *s = find_valid_slave((phys_addr_t)addr);
+        slave_buddy_t *s = find_valid_slave(addr);
 
         if (unlikely(s == KPAGE_ERR)) 
                 return;
 
-        phys_addr_t pfn = kbud_pfnum((phys_addr_t)addr, s);
+        phys_addr_t pfn = kbud_pfnum(addr, s);
         bud_order_t k = order;
 
         while (k < PFRAME_MAX_ORDER - 1) {
                 phys_addr_t bpfn = pfn ^ (1ULL << k);
 
                 if (bpfn >= s->total_pages) break;
-                if (!kbuddy_bit_chk(s, bpfn, k)) break;
-                if (!kbuddy_bit_get(s, bpfn, k)) break;
+                if (!buddy_bit_chk(s, bpfn, k)) break;
+                if (!buddy_bit_get(s, bpfn, k)) break;
 
                 void *buddy = (void *)(s->mbase + (bpfn << 12));
 
                 kbud_pop(s, buddy, k);
-                kbuddy_bit_clr(s, bpfn, k);
+                buddy_bit_clr(s, bpfn, k);
 
                 pfn &= ~(1ULL << k);
                 k++;
