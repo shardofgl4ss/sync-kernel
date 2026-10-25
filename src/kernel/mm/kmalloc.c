@@ -18,7 +18,5 @@
 
 void kmalloc_init(void)
 {
-        kmalloc_slab_init();
-        vmalloc_init();
 }
 
