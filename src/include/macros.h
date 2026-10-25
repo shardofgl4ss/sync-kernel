@@ -11,7 +11,7 @@
 #define unlikely(x)             __builtin_expect(!!(x), 0)
 
 #define substruct_owner(ptr, type, field) \
-        ((type *)((char *)(ptr) - offsetof(type, member)))
+        ((type *)((char *)(ptr) - offsetof(type, field)))
 
 
 /* https://gcc.gnu.org/onlinedocs/gcc/Common-Attributes.html */
