@@ -10,6 +10,9 @@
 #define likely(x)               __builtin_expect(!!(x), 1)
 #define unlikely(x)             __builtin_expect(!!(x), 0)
 
+#define substruct_owner(ptr, type, field) \
+        ((type *)((char *)(ptr) - offsetof(type, member)))
+
 
 /* https://gcc.gnu.org/onlinedocs/gcc/Common-Attributes.html */
 
@@ -34,6 +37,7 @@
 /* C23 specific ones. */
 #define _unsequenced_           __attribute__((unsequenced))
 #define _reproducible_          __attribute__((reproducible))
+/* end C23 specific ones. */
 
 #define _unused_                __attribute__((unused))
 #define _used_                  __attribute__((used))

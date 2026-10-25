@@ -5,5 +5,12 @@
 
 #include "types.h"
 
-extern void kmalloc_slab_init(void);
+extern struct kslab_cache;
+
+extern int slabcache_create(struct kslab_cache *cache, const char *identifier, usize objsize, usize alignment, usize flags);
+extern void slabcache_destroy(struct kslab_cache *cache);
+
+extern void *slab_alloc(struct kslab_cache *cache);
+extern void slab_free(struct kslab_cache *cache, void *obj);
+
 
