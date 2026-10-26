@@ -75,13 +75,13 @@ enum addrspace_alloc_type {
 
 
 
-/* maps a region of size bytes,                 *
- * returns KPAGE_ERR on error,                  *
- * or a valid ptr to address space on success.  *
- * phys is rounded down to nearest page size,   *
- * bytes is rounded up to multiple of pagesize. *
- * zero is a valid type for standard pages.     */
-extern void *kmap(void *phys, void *virt, u64 bytes, enum addrspace_alloc_type type);
+// /* maps a region of size bytes,                 *
+//  * returns KPAGE_ERR on error,                  *
+//  * or a valid ptr to address space on success.  *
+//  * phys is rounded down to nearest page size,   *
+//  * bytes is rounded up to multiple of pagesize. *
+//  * zero is a valid type for standard pages.     */
+// extern void *kmap(void *phys, void *virt, u64 bytes, enum addrspace_alloc_type type);
 
 
 // so the compiler will fucking stop generating 32 bit relocs to 64 bit absolute symbols.

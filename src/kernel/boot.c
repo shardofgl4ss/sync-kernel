@@ -371,6 +371,15 @@ static void buddy_handoff(void)
         MASTER_BUDDY.total_ram = preinit_pfa.total_ram;
         MASTER_BUDDY.usable_ram = preinit_pfa.usable_ram;
 
+        physmem_pregion_t *bootmem = preinit_pfa.region[0];
+
+        usize *pt_count = &preinit_pfa.boot_pagetable_count;
+        *pt_count = bootmem->max_frames - bootmem->cur_frames;
+
+        preinit_pfa.boot_reserved_start = bootmem->base;
+        preinit_pfa.boot_reserved_end = (void *)((char *)bootmem->base + (*pt_count * PAGESIZE));
+
+
         for (usize i = 0; i < preinit_pfa.region_count; i++) {
                 physmem_pregion_t *r = preinit_pfa.region[i];
 

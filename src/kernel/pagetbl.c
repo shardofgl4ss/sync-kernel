@@ -2,10 +2,12 @@
 // Copyright (C) 2026 Sync Shard
 
 #include "pagetbl.h"
+
 #include "types.h"
 #include "kstring.h"
 
 #include "mm/buddy.h"
+#include "mm/slab.h"
 
 #include "multiboot2.h"
 
@@ -21,9 +23,6 @@ extern char             _kheap[];
 #define _Nonnull
 
 #define KPT_NOT_PRESENT ((void *)-2)
-
-
-extern struct kpage_core *PHYS_CORE;
 
 
 

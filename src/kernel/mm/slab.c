@@ -250,22 +250,6 @@ static void *(*slab_alloc_type[])(struct kslab_cache *cache) = {
 
 
 
-void *slab_alloc(struct kslab_cache *cache)
-{
-        if (unlikely(!cache)) return KPAGE_ERR;
-        void *obj = KPAGE_ERR;
-
-        for (usize i = 0; i < sizeof(slab_alloc_type) / sizeof(slab_alloc_type[0]); i++) {
-                obj = (slab_alloc_type[i])(cache);
-                if (obj != KPAGE_ERR) break;
-        }
-
-        return obj;
-}
-
-
-
-
 void slab_free(struct kslab_cache *cache, void *obj)
 {
         uintptr_t pv = (uintptr_t)obj;
@@ -291,5 +275,22 @@ void slab_free(struct kslab_cache *cache, void *obj)
                         cache->empty_slabs--;
                 }
         }
+}
+
+
+
+
+_hot_ _malloc_arg_(slab_free, 2)
+void *slab_alloc(struct kslab_cache *cache)
+{
+        if (unlikely(!cache)) return KPAGE_ERR;
+        void *obj = KPAGE_ERR;
+
+        for (usize i = 0; i < sizeof(slab_alloc_type) / sizeof(slab_alloc_type[0]); i++) {
+                obj = (slab_alloc_type[i])(cache);
+                if (obj != KPAGE_ERR) break;
+        }
+
+        return obj;
 }
 

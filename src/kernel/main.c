@@ -27,8 +27,7 @@ void kidle(void)
 _noreturn_
 void kernel_main(void)
 {
-        kmalloc_init();
-        kern_uhalf_init();
+        mm_init();
         kern_gdt_init();
         isr_init();
         idt_init();
