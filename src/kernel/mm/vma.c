@@ -100,7 +100,7 @@ void vm_rb_remove_by_addr(struct rb_tree *tree, virt_addr_t addr)
 int vma_subsystem_init(void)
 {
         int ret = slabcache_create(&vma_cache, VMA_IDENTIFIER, sizeof(struct vma), alignof(struct vma), 0);
-        if (!ret) return 1;
+        if (ret != 0) return 1;
         return 0;
 }
 

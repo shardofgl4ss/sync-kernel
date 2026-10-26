@@ -72,7 +72,7 @@ static struct kslab *new_slab_init(struct kslab_cache *cache)
 
 int slabcache_create(struct kslab_cache *cache, const char *identifier, usize objsize, usize alignment, usize flags)
 {
-        static constexpr int max_order = BUDDY_ORDER_32K;
+        static constexpr int max_order = BUDDY_ORDER_64K;
         static constexpr usize slab_hdr_sz = sizeof(struct kslab);
 
         if (unlikely(!cache)) return -1;

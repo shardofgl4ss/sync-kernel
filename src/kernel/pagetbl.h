@@ -46,6 +46,20 @@ static inline void *page_phys_rebase(void *paddr, u64 shift, u64 mask)
 
 
 
+static constexpr usize PT_ENTRIES = 512;
+
+
+static constexpr usize PT_L1_ENTRYSZ = 4096;
+static constexpr usize PT_L2_ENTRYSZ = PT_L1_ENTRYSZ * PT_ENTRIES;
+static constexpr usize PT_L3_ENTRYSZ = PT_L2_ENTRYSZ * PT_ENTRIES;
+static constexpr usize PT_L4_ENTRYSZ = PT_L3_ENTRYSZ * PT_ENTRIES;
+
+static constexpr usize PT_L2_ENTRYMASK = PT_L2_ENTRYSZ - 1;
+static constexpr usize PT_L3_ENTRYMASK = PT_L3_ENTRYSZ - 1;
+static constexpr usize PT_L4_ENTRYMASK = PT_L4_ENTRYSZ - 1;
+
+
+
 extern char                     KERNEL_OFFSET[];
 extern char                     KERNEL_IOMMAP[];
 extern char                     KERNEL_PHMMAP[];

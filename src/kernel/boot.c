@@ -225,6 +225,7 @@ static void *alloc_frame(void)
                 r->cur_frames--;
 
                 pi_memset(frame, 0, PAGESIZE);
+                preinit_pfa.boot_pagetable_count++;
                 return frame;
         }
 
@@ -249,21 +250,6 @@ static PageTable *chk_pt_alloc(u64 *const restrict pte)
 
         return pagetbl;
 }
-
-
-
-
-static constexpr usize PT_ENTRIES = 512;
-
-
-static constexpr usize PT_L1_ENTRYSZ = 4096;
-static constexpr usize PT_L2_ENTRYSZ = PT_L1_ENTRYSZ * PT_ENTRIES;
-static constexpr usize PT_L3_ENTRYSZ = PT_L2_ENTRYSZ * PT_ENTRIES;
-static constexpr usize PT_L4_ENTRYSZ = PT_L3_ENTRYSZ * PT_ENTRIES;
-
-static constexpr usize PT_L2_ENTRYMASK = PT_L2_ENTRYSZ - 1;
-static constexpr usize PT_L3_ENTRYMASK = PT_L3_ENTRYSZ - 1;
-static constexpr usize PT_L4_ENTRYMASK = PT_L4_ENTRYSZ - 1;
 
 
 
@@ -299,6 +285,10 @@ static void pt_init_dram_map(PageTable *const pt_l4)
                 rem -= cnt;
         }
 }
+
+
+
+
 _preinit_ _nonnull_(1)
 static void pt_init_kcode(PageTable *const pt_l4)
 {
@@ -332,9 +322,11 @@ static void pt_init_kcode(PageTable *const pt_l4)
                         physbase += sizeof(PageTable);
                 }
         }
-
-        
 }
+
+
+
+
 _preinit_ _nonnull_(1)
 static void pt_init_temp_identmap(PageTable *pt_l4)
 {
@@ -374,13 +366,13 @@ static void buddy_handoff(void)
         physmem_pregion_t *bootmem = preinit_pfa.region[0];
 
         usize *pt_count = &preinit_pfa.boot_pagetable_count;
-        *pt_count = bootmem->max_frames - bootmem->cur_frames;
+        usize region_len = bootmem->max_frames * PAGESIZE;
 
-        preinit_pfa.boot_reserved_start = bootmem->base;
-        preinit_pfa.boot_reserved_end = (void *)((char *)bootmem->base + (*pt_count * PAGESIZE));
+        preinit_pfa.boot_reserved_end = (char *)bootmem->base + region_len;
+        preinit_pfa.boot_reserved_start = (char *)preinit_pfa.boot_reserved_end - (*pt_count * PAGESIZE);
 
-
-        for (usize i = 0; i < preinit_pfa.region_count; i++) {
+        // The boot region is skipped until coalescence with the later defunct early init pt's.
+        for (usize i = 1; i < preinit_pfa.region_count; i++) {
                 physmem_pregion_t *r = preinit_pfa.region[i];
 
                 void *newbase = phys_to_virt_pm(r->base);
