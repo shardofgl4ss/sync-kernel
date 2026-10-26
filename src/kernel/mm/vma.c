@@ -16,8 +16,8 @@
 
 const char *VMA_IDENTIFIER = "vma_struct";
 
-static struct rb_tree vma_tree = {};
-static struct kslab_cache vma_cache = {};
+struct rb_tree vma_tree = {};
+struct kslab_cache vma_cache = {};
 
 
 static inline struct vma *return_vma_struct(struct rb_node *x)
@@ -28,9 +28,9 @@ static inline struct vma *return_vma_struct(struct rb_node *x)
 
 
 
-int vm_rb_insert(struct rb_tree *tree, struct vma *vma)
+int vm_area_insert(struct rb_tree *vm_tree, struct vma *vm_area)
 {
-        struct rb_node **link = &tree->root;
+        struct rb_node **link = &vm_tree->root;
         struct rb_node *parent = NULL;
 
         while (*link != NULL) {
@@ -39,16 +39,16 @@ int vm_rb_insert(struct rb_tree *tree, struct vma *vma)
 
                 parent = current;
 
-                if (vma->vm_end <= current_vm->vm_start) {
+                if (vm_area->vm_end <= current_vm->vm_start) {
                         link = &current->left;
-                } else if (vma->vm_start >= current_vm->vm_end) {
+                } else if (vm_area->vm_start >= current_vm->vm_end) {
                         link = &current->right;
                 } else {
                         return -1;
                 }
         }
         
-        rb_insert(tree, &vma->rb_node, parent, link);
+        rb_insert(vm_tree, &vm_area->rb_node, parent, link);
         return 0;
 }
 
@@ -56,18 +56,18 @@ int vm_rb_insert(struct rb_tree *tree, struct vma *vma)
 
 
 /* Does nothing if vma is NULL. NOTHING! NOTHIIINGNGGG!!! */
-void vm_rb_remove(struct rb_tree *vm_tree, struct vma *_Nullable vma)
+void vm_area_remove(struct rb_tree *vm_tree, struct vma *_Nullable vm_area)
 {
-        if (!vma) return;
+        if (!vm_area) return;
 
-        rb_remove(vm_tree, &vma->rb_node);
-        slab_free(&vma_cache, vma);
+        rb_remove(vm_tree, &vm_area->rb_node);
+        slab_free(&vma_cache, vm_area);
 }
 
 
 
 
-struct vma *vm_rb_search(struct rb_tree *vm_tree, virt_addr_t addr)
+struct vma *vm_area_search(struct rb_tree *vm_tree, virt_addr_t addr)
 {
         struct rb_node *node = vm_tree->root;
         struct vma *v = NULL;
@@ -88,11 +88,11 @@ done:
 
 
 
-void vm_rb_remove_by_addr(struct rb_tree *tree, virt_addr_t addr)
+void vm_area_remove_by_addr(struct rb_tree *vm_tree, virt_addr_t addr)
 {
         // These are separate to help debugging.
-        struct vma *v = vm_rb_search(tree, addr);
-        vm_rb_remove(tree, v);
+        struct vma *v = vm_area_search(vm_tree, addr);
+        vm_area_remove(vm_tree, v);
 }
 
 

@@ -19,6 +19,7 @@
 
 int kmalloc_init(void)
 {
+        return 0;
 }
 
 

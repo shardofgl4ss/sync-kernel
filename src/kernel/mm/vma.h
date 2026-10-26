@@ -16,12 +16,14 @@ struct vma {
         struct rb_node rb_node;
 };
 
+extern struct rb_tree vma_tree;
+extern struct kslab_cache vma_cache;
 
-extern int vm_rb_insert(struct rb_tree *tree, struct vma *vma);
+extern int vm_area_insert(struct rb_tree *vm_tree, struct vma *vm_area);
 /* Does nothing if vma is NULL. NOTHING! NOTHIIINGNGGG!!! */
-extern void vm_rb_remove(struct rb_tree *tree, struct vma *_Nullable vma);
+extern void vm_area_remove(struct rb_tree *vm_tree, struct vma *_Nullable vm_area);
 /* Called internally by vm_rb_remove_by_addr() */
-extern struct vma *vm_rb_search(struct rb_tree *tree, virt_addr_t addr);
-extern void vm_rb_remove_by_addr(struct rb_tree *tree, virt_addr_t addr);
+extern struct vma *vm_area_search(struct rb_tree *vm_tree, virt_addr_t addr);
+extern void vm_area_remove_by_addr(struct rb_tree *vm_tree, virt_addr_t addr);
 extern int vma_subsystem_init(void);
 
