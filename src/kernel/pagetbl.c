@@ -221,24 +221,6 @@ void kstack_guard_init(void)
 
 
 
-void kperm_init(void)
-{
-        const u64 dist = ((uintptr_t)_after_ro - (uintptr_t)_begin) / sizeof(PageTable);
-        PageTable *arr = (void *)_begin;
-
-        PageTable *l2 = kpt_get_l2(arr, NULL);
-
-        void *v;
-        for (u64 i = 0; i < dist; i++) {
-                v = &arr[i];
-                PageTable *l1 = kpt_get_l1(v, l2);
-                l1->entries[page_l1_idx(v)] &= ~PT_FLAG_WRITABLE;
-        }
-}
-
-
-
-
 /* All preinit data and code after this function is reused memory. */
 static void unmap_preinit_mem(void)
 {
@@ -359,7 +341,6 @@ int kern_uhalf_init()
 {
         reallocate_bootmem_pages();
         kstack_guard_init();
-        // kperm_init();
         unmap_preinit_mem();
 
         return 0;
