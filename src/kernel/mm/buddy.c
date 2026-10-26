@@ -356,6 +356,7 @@ void kbud_free_range(const phys_addr_t phys, const usize len)
 
 /* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error.     *
  * prefer using kbud_alloc() instead, and track the order.                      */
+_hot_ _malloc_
 void *kbud_alloc_range(usize sz)
 {
         const usize rounded_sz = PAGE_ALIGNUP(sz);
@@ -390,7 +391,8 @@ void *kbud_alloc_range(usize sz)
                 }
 
                 while (order > req) {
-                        const phys_addr_t order_shift = (phys_addr_t)PAGESIZE << order++;
+                        order--;
+                        const phys_addr_t order_shift = (phys_addr_t)PAGESIZE << order;
                         void *buddy = (void *)((phys_addr_t)addr ^ order_shift);
 
                         kbud_push(s, buddy, order);
@@ -405,7 +407,7 @@ void *kbud_alloc_range(usize sz)
 
 
 
-_hot_
+_hot_ _malloc_
 void *kbud_alloc(const bud_order_t req)
 {
         if (req >= PFRAME_MAX_ORDER) {
@@ -435,7 +437,8 @@ void *kbud_alloc(const bud_order_t req)
                 if (unlikely(addr == KPAGE_ERR)) continue;
 
                 while (order > req) {
-                        const phys_addr_t order_shift = (phys_addr_t)PAGESIZE << order++;
+                        order--;
+                        const phys_addr_t order_shift = (phys_addr_t)PAGESIZE << order;
                         void *buddy = (void *)((phys_addr_t)addr ^ order_shift);
 
                         kbud_push(s, buddy, order);
