@@ -10,6 +10,9 @@
 #define likely(x)               __builtin_expect(!!(x), 1)
 #define unlikely(x)             __builtin_expect(!!(x), 0)
 
+#define _Nullable
+#define _Nonnull
+
 #define substruct_owner(ptr, type, field) \
         ((type *)((char *)(ptr) - offsetof(type, field)))
 

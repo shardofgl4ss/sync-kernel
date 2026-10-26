@@ -47,7 +47,7 @@ static inline void tlb_invl_page(u64 vaddr)
 
 static inline PageTable *kpt_get_l4(void)
 {
-	void *cr3;
+	phys_addr_t cr3;
         __asm__ volatile (
                 "movq %%cr3, %0"
                 : "=r"(cr3)
@@ -97,78 +97,74 @@ static PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
 
 
 
+/* Returns a physmap ptr to a valid page table if it exists. If not, this allocates one and returns it. */
 static PageTable *return_pt_or_alloc(u64 *const restrict pte)
 {
-        PageTable *p = KPAGE_ERR;
-
         if (!(*pte & PT_FLAG_PRESENT)) {
-                p = kbud_alloc(BUDDY_ORDER_4K);
+                PageTable *p = kbud_alloc(BUDDY_ORDER_4K);
                 if (p == KPAGE_ERR) return KPAGE_ERR;
 
                 memset((void *)p, 0, sizeof(PageTable));
                 *pte = (u64)virt_to_phys_pm(p) | PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
+                return p;
         } else {
-                p = PT_REBASE(*pte);
+                phys_addr_t phy = PT_REBASE(*pte);
+                return phys_to_virt_pm(phy);
         }
 
-        return p;
 }
 
 
 
 
 // pagetables have given me an aneurysm
-void *kpt_get_phys(void *vaddr)
+phys_addr_t kpt_get_phys(void *vaddr)
 {
-        vaddr = (void *)PAGE_ALIGNDOWN((u64)vaddr);
+        // vaddr = (void *)PAGE_ALIGNDOWN((u64)vaddr);
 
         constexpr u64 bmask_51_21 = BITRANGE_MASK(51, 21);
         constexpr u64 bmask_51_30 = BITRANGE_MASK(51, 30);
-
-        constexpr u64 bmask_29_00 = BITRANGE_MASK(29, 0);
-        constexpr u64 bmask_20_00 = BITRANGE_MASK(20, 0);
-        constexpr u64 bmask_11_00 = BITRANGE_MASK(11, 0);
+        constexpr u64 bmask_29_00 = BITRANGE_MASK(29, 00);
+        constexpr u64 bmask_20_00 = BITRANGE_MASK(20, 00);
+        constexpr u64 bmask_11_00 = BITRANGE_MASK(11, 00);
 
         u64 entry = 0;
 
         const PageTable *pml4 = kpt_get_l4();
         entry = pml4->entries[page_l4_idx(vaddr)];
-        if ((entry & PT_FLAG_PRESENT) == 0)
-                return KPAGE_ERR;
 
-        const PageTable *pdpt = PT_REBASE(entry);
+        if ((entry & PT_FLAG_PRESENT) == 0) return (phys_addr_t)KPAGE_ERR;
+
+        const PageTable *pdpt = phys_to_virt_pm(PT_REBASE(entry));
         entry = pdpt->entries[page_l3_idx(vaddr)];
 
-        if ((entry & PT_FLAG_PRESENT) == 0) 
-                return KPAGE_ERR;
+        if ((entry & PT_FLAG_PRESENT) == 0) return (phys_addr_t)KPAGE_ERR;
 
         if ((entry & PT_FLAG_PAGESIZE) != 0) {
-                u64 paddr = (u64)page_phys_rebase((void *)entry, 30, bmask_51_30);
-                paddr |= (u64)vaddr & bmask_29_00;
-                return (void *)paddr;
+                phys_addr_t paddr = page_phys_rebase(entry, 30, bmask_51_30);
+                paddr |= (phys_addr_t)((uintptr_t)vaddr & bmask_29_00);
+                return paddr;
         }
 
-        const PageTable *pd = PT_REBASE(entry);
+        const PageTable *pd = phys_to_virt_pm(PT_REBASE(entry));
         entry = pd->entries[page_l2_idx(vaddr)];
 
-        if ((entry & PT_FLAG_PRESENT) == 0)
-                return KPAGE_ERR;
+        if ((entry & PT_FLAG_PRESENT) == 0) return (phys_addr_t)KPAGE_ERR;
 
         if ((entry & PT_FLAG_PAGESIZE) != 0) {
-                u64 paddr = (u64)page_phys_rebase((void *)entry, 21, bmask_51_21);
-                paddr |= (u64)vaddr & bmask_20_00;
-                return (void *)paddr;
+                phys_addr_t paddr = page_phys_rebase(entry, 21, bmask_51_21);
+                paddr |= (phys_addr_t)((uintptr_t)vaddr & bmask_20_00);
+                return paddr;
         }
 
-        const PageTable *pt = PT_REBASE(entry);
+        const PageTable *pt = phys_to_virt_pm(PT_REBASE(entry));
         entry = pt->entries[page_l1_idx(vaddr)];
 
-        if ((entry & PT_FLAG_PRESENT) == 0)
-                return KPAGE_ERR;
+        if ((entry & PT_FLAG_PRESENT) == 0) return (phys_addr_t)KPAGE_ERR;
 
-        u64 paddr = (u64)PT_REBASE(entry);
-	paddr |= (u64)page_phys_rebase(vaddr, 0, bmask_11_00);
-	return (void *)paddr;
+        phys_addr_t paddr = PT_REBASE(entry);
+	paddr |= (phys_addr_t)((uintptr_t)vaddr & bmask_11_00);
+	return paddr;
 }
 
 
@@ -186,7 +182,7 @@ void virt_map_page(void *vaddr)
 void virt_unmap_page(void *vaddr)
 {
         if (unlikely(!vaddr)) return;
-        usize valign = PAGE_ALIGNDOWN((usize)vaddr);
+        usize valign = PAGE_ALIGNDOWN((uintptr_t)vaddr);
         void *v = (void *)valign;
 
         PageTable *l1 = kpt_get_l1(v, NULL);
@@ -224,14 +220,6 @@ void kstack_guard_init(void)
 /* All preinit data and code after this function is reused memory. */
 static void unmap_preinit_mem(void)
 {
-        extern char __prebegin[];
-        extern char __preend[];
-
-        const usize preinit_memory = (usize)__preend - (usize)__prebegin;
-        void *base = phys_to_virt_of((void *)((uintptr_t)__prebegin));
-
-        memset(base, -1, preinit_memory);
-        kbud_free_range((phys_addr_t)base, preinit_memory);
 }
 
 
@@ -239,7 +227,7 @@ static void unmap_preinit_mem(void)
 
 static void remap_bootmem_kcode_pages(PageTable *l4, void *offs, const usize kernsz)
 {
-        void *phys = (void *)0x0ULL;
+        phys_addr_t phy = 0x0ULL;
 
         const usize l1_count = ((kernsz + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
         const usize l2_count = ((kernsz + PT_L3_ENTRYMASK) & ~PT_L3_ENTRYMASK) / PT_L3_ENTRYSZ;
@@ -261,13 +249,13 @@ static void remap_bootmem_kcode_pages(PageTable *l4, void *offs, const usize ker
 
                         for (usize k = 0; k < PT_ENTRIES; k++) {
                                 u64 flags = PT_FLAG_PRESENT;
-                                void *addr = phys_to_virt_of(phys);
+                                void *addr = phys_to_virt_of(phy);
 
                                 if (addr >= (void *)_after_ro || addr < (void *)_begin) 
                                         flags |= PT_FLAG_WRITABLE;
 
-                                pt->entries[k] = (u64)phys | flags;
-                                phys += sizeof(PageTable);
+                                pt->entries[k] = phy | flags;
+                                phy += sizeof(PageTable);
                         }
                 }
         }
@@ -305,9 +293,15 @@ static void remap_bootmem_dmap_pages(PageTable *l4, void *dmap, const usize rams
 
 static void reallocate_bootmem_pages(void)
 {
+        extern char __prebegin[];
+        extern char __preend[];
+
         const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
         const usize ram_max = preinit_pfa.total_ram;
         
+        const usize len = preinit_pfa.region[0]->max_frames << 12;
+        void *vbase = phys_to_virt_pm((phys_addr_t)preinit_pfa.region[0]->base);
+
         void *dmap = (void *)get_kernel_phmap();
         void *offs = (void *)get_kernel_offs();
 
@@ -327,11 +321,17 @@ static void reallocate_bootmem_pages(void)
                 : "memory"
         );
 
-        struct preinit_allocator *early_alloc = phys_to_virt_pm((void *)&preinit_pfa);
-        physmem_pregion_t *region = phys_to_virt_pm(early_alloc->region[0]);
-        const usize len = region->max_frames << 12;
+        // struct preinit_allocator *early_alloc = phys_to_virt_pm((void *)&preinit_pfa);
+        // physmem_pregion_t *region = phys_to_virt_pm(early_alloc->region[0]);
+        // const usize len = region->max_frames << 12;
 
-        kbud_free_range((phys_addr_t)(phys_to_virt_pm(region->base)), len);
+        kbud_free_range(vbase, len);
+
+        const uintptr_t preinit_memory = (uintptr_t)__preend - (uintptr_t)__prebegin;
+        void *base = phys_to_virt_of((uintptr_t)__prebegin);
+
+        memset(base, -1, preinit_memory);
+        kbud_free_range(base, preinit_memory);
 }
 
 

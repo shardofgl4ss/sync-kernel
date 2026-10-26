@@ -13,7 +13,7 @@
 
 
 struct kslab {
-        struct kslab_cache *cache;
+        kslab_cache_t *cache;
 
         struct kslab *next;
         struct kslab *prev;
@@ -26,7 +26,7 @@ struct kslab {
 };
 
 
-static struct kslab *new_slab_init(struct kslab_cache *cache)
+static struct kslab *kslab_new_slab(kslab_cache_t *cache)
 {
         if (unlikely(!cache)) return KPAGE_ERR;
 
@@ -70,7 +70,7 @@ static struct kslab *new_slab_init(struct kslab_cache *cache)
 
 
 
-int slabcache_create(struct kslab_cache *cache, const char *identifier, usize objsize, usize alignment, usize flags)
+int kslab_cache_create(kslab_cache_t *cache, const char *identifier, usize objsize, usize alignment, usize flags)
 {
         static constexpr int max_order = BUDDY_ORDER_64K;
         static constexpr usize slab_hdr_sz = sizeof(struct kslab);
@@ -124,7 +124,7 @@ int slabcache_create(struct kslab_cache *cache, const char *identifier, usize ob
         cache->empty_slabs++;
         cache->max_empty_slabs = KSLAB_PRESET_MAX_EMPTY;
 
-        if (new_slab_init(cache) == KPAGE_ERR) {
+        if (kslab_new_slab(cache) == KPAGE_ERR) {
                 return -1;
         }
 
@@ -134,7 +134,7 @@ int slabcache_create(struct kslab_cache *cache, const char *identifier, usize ob
 
 
 
-void slabcache_destroy(struct kslab_cache *cache)
+void kslab_cache_destroy(kslab_cache_t *cache)
 {
         struct kslab **ps[] = {
                 &cache->full,
@@ -146,7 +146,7 @@ void slabcache_destroy(struct kslab_cache *cache)
                 while (*(ps[i])) {
                         struct kslab *s = *(ps[i]);
                         ps[i] = &((*(ps[i]))->next);
-                        kbud_free((phys_addr_t)s, cache->order);
+                        kbud_free(s, cache->order);
                         // slabs are always at the very base of the allocation.
                 }
         }
@@ -159,7 +159,7 @@ void slabcache_destroy(struct kslab_cache *cache)
 
 
 
-static void slab_remove_node(struct kslab_cache *cache, struct kslab **from, struct kslab *target)
+static void kslab_remove_node(kslab_cache_t *cache, struct kslab **from, struct kslab *target)
 {
         struct kslab **p = from;
 
@@ -169,13 +169,13 @@ static void slab_remove_node(struct kslab_cache *cache, struct kslab **from, str
 
         if (*p) *p = target->next;
 
-        kbud_free((phys_addr_t)target, cache->order);
+        kbud_free(target, cache->order);
 }
 
 
 
 
-static void slab_relink_node(struct kslab **from, struct kslab **to, struct kslab *target)
+static void kslab_relink_node(struct kslab **from, struct kslab **to, struct kslab *target)
 {
         struct kslab **p = from;
 
@@ -197,14 +197,14 @@ static void slab_relink_node(struct kslab **from, struct kslab **to, struct ksla
 
 
 
-static void *slab_partial_alloc(struct kslab_cache *cache)
+static void *kslab_partial_alloc(kslab_cache_t *cache)
 {
         if (!cache->partial) return KPAGE_ERR;
 
         struct kslab *slab = cache->partial;
 
         if (!(--slab->free_count)) {
-                slab_relink_node(&cache->partial, &cache->full, slab);
+                kslab_relink_node(&cache->partial, &cache->full, slab);
         }
 
         void **retalloc = (void **)slab->freelist;
@@ -213,12 +213,12 @@ static void *slab_partial_alloc(struct kslab_cache *cache)
         return (void *)retalloc;
 
 }
-static void *slab_empty_alloc(struct kslab_cache *cache)
+static void *kslab_empty_alloc(kslab_cache_t *cache)
 {
         if (!cache->empty) return KPAGE_ERR;
 
         struct kslab *slab = cache->empty;
-        slab_relink_node(&cache->empty, &cache->partial, slab);
+        kslab_relink_node(&cache->empty, &cache->partial, slab);
         cache->empty_slabs--;
 
         void **retalloc = (void **)slab->freelist;
@@ -228,29 +228,29 @@ static void *slab_empty_alloc(struct kslab_cache *cache)
 
         return (void *)retalloc;
 }
-static void *slab_new_alloc(struct kslab_cache *cache)
+static void *kslab_new_alloc(kslab_cache_t *cache)
 {
-        struct kslab *slab = new_slab_init(cache);
+        struct kslab *slab = kslab_new_slab(cache);
 
 
         if (unlikely(slab == KPAGE_ERR)) {
                 return KPAGE_ERR;
         }
 
-        return slab_empty_alloc(cache);
+        return kslab_empty_alloc(cache);
 }
 
 // priority: partial -> empty -> new
-static void *(*slab_alloc_type[])(struct kslab_cache *cache) = {
-        &slab_partial_alloc,
-        &slab_empty_alloc,
-        &slab_new_alloc,
+static void *(*kslab_alloc_type[])(kslab_cache_t *cache) = {
+        &kslab_partial_alloc,
+        &kslab_empty_alloc,
+        &kslab_new_alloc,
 };
 
 
 
 
-void slab_free(struct kslab_cache *cache, void *obj)
+void kslab_free(kslab_cache_t *cache, void *obj)
 {
         uintptr_t pv = (uintptr_t)obj;
         uintptr_t base = pv & ~(buddy_order_to_val(cache->order) - 1);
@@ -265,13 +265,13 @@ void slab_free(struct kslab_cache *cache, void *obj)
         const bool is_empty = (slab->free_count == cache->slab_objs_per);
 
         if (was_full) {
-                slab_relink_node(&cache->full, &cache->partial, slab);
+                kslab_relink_node(&cache->full, &cache->partial, slab);
         } else if (is_empty) {
-                slab_relink_node(&cache->partial, &cache->empty, slab);
+                kslab_relink_node(&cache->partial, &cache->empty, slab);
                 cache->empty_slabs++;
 
                 if (++cache->empty_slabs > cache->max_empty_slabs) {
-                        slab_remove_node(cache, &cache->empty, cache->empty);
+                        kslab_remove_node(cache, &cache->empty, cache->empty);
                         cache->empty_slabs--;
                 }
         }
@@ -280,14 +280,14 @@ void slab_free(struct kslab_cache *cache, void *obj)
 
 
 
-_hot_ _malloc_arg_(slab_free, 2)
-void *slab_alloc(struct kslab_cache *cache)
+_hot_ _malloc_arg_(kslab_free, 2)
+void *kslab_alloc(kslab_cache_t *cache)
 {
         if (unlikely(!cache)) return KPAGE_ERR;
         void *obj = KPAGE_ERR;
 
-        for (usize i = 0; i < sizeof(slab_alloc_type) / sizeof(slab_alloc_type[0]); i++) {
-                obj = (slab_alloc_type[i])(cache);
+        for (usize i = 0; i < sizeof(kslab_alloc_type) / sizeof(kslab_alloc_type[0]); i++) {
+                obj = (kslab_alloc_type[i])(cache);
                 if (obj != KPAGE_ERR) break;
         }
 

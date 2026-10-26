@@ -8,7 +8,7 @@
 
 struct kslab;
 
-struct kslab_cache {
+typedef struct kslab_cache {
         const char *identifier;
 
         bud_order_t order;
@@ -28,14 +28,14 @@ struct kslab_cache {
         u32 metadata;
 
         u8 max_empty_slabs;
-};
+} kslab_cache_t;
 
 
-extern int slabcache_create(struct kslab_cache *cache, const char *identifier, usize objsize, usize alignment, usize flags);
-extern void slabcache_destroy(struct kslab_cache *cache);
+extern int kslab_cache_create(struct kslab_cache *cache, const char *identifier, usize objsize, usize alignment, usize flags);
+extern void kslab_cache_destroy(struct kslab_cache *cache);
 
-extern void *slab_alloc(struct kslab_cache *cache);
-extern void slab_free(struct kslab_cache *cache, void *obj);
+extern void *kslab_alloc(struct kslab_cache *cache);
+extern void kslab_free(struct kslab_cache *cache, void *obj);
 
 
 

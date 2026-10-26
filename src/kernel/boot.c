@@ -225,7 +225,7 @@ static void *alloc_frame(void)
                 r->cur_frames--;
 
                 pi_memset(frame, 0, PAGESIZE);
-                preinit_pfa.boot_pagetable_count++;
+                // preinit_pfa.boot_pagetable_count++;
                 return frame;
         }
 
@@ -245,7 +245,7 @@ static PageTable *chk_pt_alloc(u64 *const restrict pte)
                 pagetbl = alloc_frame();
                 *pte = (u64)pagetbl | PT_FLAGS_RW;
         } else {
-                pagetbl = PT_REBASE(*pte);
+                pagetbl = (void *)PT_REBASE(*pte);
         }
 
         return pagetbl;
@@ -363,23 +363,23 @@ static void buddy_handoff(void)
         MASTER_BUDDY.total_ram = preinit_pfa.total_ram;
         MASTER_BUDDY.usable_ram = preinit_pfa.usable_ram;
 
-        physmem_pregion_t *bootmem = preinit_pfa.region[0];
+        // physmem_pregion_t *bootmem = preinit_pfa.region[0];
 
-        usize *pt_count = &preinit_pfa.boot_pagetable_count;
-        usize region_len = bootmem->max_frames * PAGESIZE;
+        // usize *pt_count = &preinit_pfa.boot_pagetable_count;
+        // usize region_len = bootmem->max_frames * PAGESIZE;
 
-        preinit_pfa.boot_reserved_end = (char *)bootmem->base + region_len;
-        preinit_pfa.boot_reserved_start = (char *)preinit_pfa.boot_reserved_end - (*pt_count * PAGESIZE);
+        // preinit_pfa.boot_reserved_end = (char *)bootmem->base + region_len;
+        // preinit_pfa.boot_reserved_start = (char *)preinit_pfa.boot_reserved_end - (*pt_count * PAGESIZE);
 
         // The boot region is skipped until coalescence with the later defunct early init pt's.
         for (usize i = 1; i < preinit_pfa.region_count; i++) {
                 physmem_pregion_t *r = preinit_pfa.region[i];
 
-                void *newbase = phys_to_virt_pm(r->base);
+                void *newbase = phys_to_virt_pm((phys_addr_t)r->base);
                 usize len = r->cur_frames << 12;
 
                 pi_memset(newbase, 0, sizeof(slave_buddy_t));
-                kbud_free_range((phys_addr_t)newbase, len);
+                kbud_free_range(newbase, len);
         }
 }
 

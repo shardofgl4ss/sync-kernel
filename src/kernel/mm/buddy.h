@@ -3,20 +3,15 @@
 
 #pragma once
 
-#include "macros.h"
-#include "types.h"
-#include "pagetbl.h"
 #include "builtin.h"
+#include "macros.h"
+#include "pagetbl.h"
+#include "types.h"
 
 #define PFRAME_MAX_REGIONS      128
 #define PFRAME_MAX_ORDER        11
 
-/* phys_addr_t actually means an address from the direct map at --------------- *
- * 0xFFFF800000000000, im just a bit lazy to change it, and ------------------- *
- * dmap_addr_t sounds a lot more boring. for all uses of phys_addr_t, --------- *
- * it means physical dmap addr, not true phys, cause 0x0 is unmapped. --------- *
- * this does however mean for the kernel that phys is at 0xFFFF800000000000. -- */
-typedef uintptr_t phys_addr_t;
+typedef uint64_t pfn_t;
 
 typedef enum buddy_block_order {
         BUDDY_ORDER_4K          = 0,
@@ -36,18 +31,6 @@ typedef enum buddy_block_order {
         BUDDY_ORDER_2M          = 9,
         BUDDY_ORDER_4M          = 10,
 } bud_order_t;
-
-
-/* this is metadata, but it isn't just metadata.
- * making it pagealigned makes it easy to do whole-page 
- * pointer arithmetic. it's basically a representation of a whole page. */
-typedef struct _kpage_frame {
-        struct _kpage_frame *next;
-
-        /* future someone: as long as order can go upto MAX_ORDER,      *
-         * its fine to shorten this and add bitfields.                  */
-        u8 order;
-} _PAGEALIGNED page_frame_t;
 
 
 /* also known as the region header. this should have a boatload of extra ------ *
@@ -95,15 +78,18 @@ extern master_buddy_t MASTER_BUDDY;
 
 
 /* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error. */
+_hot_ _malloc_
 void *kbud_alloc(const bud_order_t req);
-/* frees at most size PFRAME_MAX_ORDER - 1 */
-void kbud_free(const phys_addr_t addr, const bud_order_t order);
 /* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error.
  * prefer using kbud_alloc() instead, and track the order. */
+_hot_ _malloc_
 void *kbud_alloc_range(usize sz);
 /* prefer using kbud_free() instead, and track the order. */
-extern void kbud_free_range(const phys_addr_t phys, const usize len);
-
+_hot_
+extern void kbud_free_range(void *vaddr, const usize len);
+/* frees at most size PFRAME_MAX_ORDER - 1 */
+_hot_
+void kbud_free(void *vaddr, const bud_order_t order);
 
 
 

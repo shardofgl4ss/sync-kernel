@@ -24,9 +24,9 @@ struct preinit_allocator {
         physmem_pregion_t *region[PFRAME_MAX_REGIONS];
 
         // boot_reserved denotes where the initial pagetables begin and end.
-        void *boot_reserved_start;
-        void *boot_reserved_end;
-        usize boot_pagetable_count;
+        // void *boot_reserved_start;
+        // void *boot_reserved_end;
+        // usize boot_pagetable_count;
 
         usize region_count;
 
