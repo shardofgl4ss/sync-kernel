@@ -5,4 +5,4 @@
 
 #include "types.h"
 
-extern void vmalloc_init(void);
+extern int vmalloc_init(void);

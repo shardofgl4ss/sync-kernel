@@ -6,6 +6,5 @@
 #include "types.h"
 
 
-extern void kmalloc_init(void);
 extern void mm_init(void);
 

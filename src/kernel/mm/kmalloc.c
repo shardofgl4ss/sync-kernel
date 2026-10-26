@@ -17,7 +17,7 @@
 #define ALIGNMENT       0x10
 
 
-void kmalloc_init(void)
+int kmalloc_init(void)
 {
 }
 

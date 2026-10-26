@@ -5,7 +5,8 @@
 
 #include "types.h"
 
-void vmalloc_init(void)
+int vmalloc_init(void)
 {
+        return 0;
 }
 

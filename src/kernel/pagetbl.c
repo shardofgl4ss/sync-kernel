@@ -230,11 +230,13 @@ static void unmap_preinit_mem(void)
 
 
 
-void kern_uhalf_init()
+int kern_uhalf_init()
 {
         kstack_guard_init();
         kperm_init();
         unmap_preinit_mem();
+
+        return 0;
 }
 
 
