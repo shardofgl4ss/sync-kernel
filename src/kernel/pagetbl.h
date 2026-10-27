@@ -72,9 +72,9 @@ static constexpr usize PT_L4_ENTRYMASK = PT_L4_ENTRYSZ - 1;
 
 
 
-extern char                     KERNEL_OFFSET[];
-extern char                     KERNEL_IOMMAP[];
-extern char                     KERNEL_PHMMAP[];
+extern char KERNEL_OFFSET[];
+extern char KERNEL_VMMMAP[];
+extern char KERNEL_PHMMAP[];
 
 #define KPAGE_ERR               ((void *)-1)
 
@@ -132,7 +132,7 @@ _const_ _always_inline_
 static inline u64 get_kernel_iomap(void)
 {
         u64 x;
-        __asm__ volatile ("movabs $KERNEL_IOMMAP, %0" : "=r"(x));
+        __asm__ volatile ("movabs $KERNEL_VMMMAP, %0" : "=r"(x));
         return x;
 }
 
