@@ -112,7 +112,7 @@ static void kbud_init_region(phys_addr_t phy, const usize len)
         virt_region->total_pages = rpages;
         virt_region->rbase = phy;
 
-        usize total_bytes = 0;
+        // usize total_bytes = 0;
         /* cur is used as an aligned bitmap base offset, and it can be  *
          * used for the end of the last bitmap too for setting mbase.   */
         u8 *virt_cur = (u8 *)((((uintptr_t)virt_region + sizeof(*virt_region)) + 7) & ~(usize)7);
@@ -126,10 +126,9 @@ static void kbud_init_region(phys_addr_t phy, const usize len)
                 virt_region->lut.bitmap_arr[i] = virt_cur;
                 virt_region->lut.maxbits[i] = bits;
                 virt_region->max_order = (bud_order_t)i;
-                total_bytes += SY_ALIGN_UP(bytes, BITMAP_ALIGN);
+                // total_bytes += SY_ALIGN_UP(bytes, BITMAP_ALIGN);
                 virt_cur += SY_ALIGN_UP(bytes, BITMAP_ALIGN);
         }
-
 
         // virt_region->lut.base = (phys_addr_t)((u8 *)virt_region + sizeof(*virt_region));
         virt_region->lut.base = phy + sizeof(*virt_region);
