@@ -31,6 +31,7 @@ _noreturn_
 void kernel_main(void)
 {
         mm_init();
+        vga_init();
         gdt_init();
         isr_init();
         idt_init();

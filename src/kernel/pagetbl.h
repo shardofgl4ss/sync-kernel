@@ -17,6 +17,22 @@ typedef struct x86_page_tbl {
         u64 entries[512];
 } _PAGEALIGNED PageTable;
 
+static inline void tlb_invl_page(u64 vaddr)
+{
+        __asm__ volatile (
+                "invlpg (%0)"
+                :
+                : "r"(vaddr)
+                : "memory"
+        );
+}
+
+static inline void tlb_flush(void)
+{
+	u64 cr3;
+        __asm__ volatile ("mov %%cr3, %0" : "=r"(cr3));
+        __asm__ volatile ("mov %0, %%cr3" :: "r"(cr3) : "memory");
+}
 
 typedef struct kslab_cache kslab_cache_t;
 
@@ -35,6 +51,8 @@ typedef struct _kpage_frame {
 
 static_assert(sizeof(PageTable) == 0x1000, __FILE__ " PageTable size error\n");
 
+/* Returns a physmap ptr to a valid page table if it exists. If not, this allocates one and returns it. */
+extern PageTable *return_pt_or_alloc(u64 *const restrict pte);
 
 _const_ _always_inline_
 static inline u64 page_l4_idx(void *virt) { return (((u64)virt >> 39) & 0x1FF); }
@@ -61,7 +79,7 @@ static inline phys_addr_t page_phys_rebase(phys_addr_t phys, u64 shift, u64 mask
 static constexpr usize PT_ENTRIES = 512;
 
 
-static constexpr usize PT_L1_ENTRYSZ = 4096;
+static constexpr usize PT_L1_ENTRYSZ = sizeof(PageTable);
 static constexpr usize PT_L2_ENTRYSZ = PT_L1_ENTRYSZ * PT_ENTRIES;
 static constexpr usize PT_L3_ENTRYSZ = PT_L2_ENTRYSZ * PT_ENTRIES;
 static constexpr usize PT_L4_ENTRYSZ = PT_L3_ENTRYSZ * PT_ENTRIES;
@@ -70,6 +88,21 @@ static constexpr usize PT_L2_ENTRYMASK = PT_L2_ENTRYSZ - 1;
 static constexpr usize PT_L3_ENTRYMASK = PT_L3_ENTRYSZ - 1;
 static constexpr usize PT_L4_ENTRYMASK = PT_L4_ENTRYSZ - 1;
 
+
+_const_ static inline usize get_pagetbl_count_l3(const usize bytes)
+{
+        return ((bytes + PT_L4_ENTRYMASK) & ~PT_L4_ENTRYMASK) / PT_L4_ENTRYSZ;
+}
+
+_const_ static inline usize get_pagetbl_count_l2(const usize bytes)
+{
+        return ((bytes + PT_L3_ENTRYMASK) & ~PT_L3_ENTRYMASK) / PT_L3_ENTRYSZ;
+}
+
+_const_ static inline usize get_pagetbl_count_l1(const usize bytes)
+{
+        return ((bytes + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
+}
 
 
 extern char KERNEL_OFFSET[];
@@ -129,12 +162,18 @@ static inline u64 get_kernel_offs(void)
 }
 /* fuck you, compiler. */
 _const_ _always_inline_ 
-static inline u64 get_kernel_iomap(void)
+static inline u64 get_kernel_vmmap(void)
 {
         u64 x;
         __asm__ volatile ("movabs $KERNEL_VMMMAP, %0" : "=r"(x));
         return x;
 }
+
+
+extern PageTable *kpt_get_l4(void);
+extern PageTable *kpt_get_l3(void *vaddr, PageTable *_Nullable l4);
+extern PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3);
+extern PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2);
 
 
 /* linear mappings only. */

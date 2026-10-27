@@ -198,7 +198,7 @@ int vma_subsystem_init(void)
 
         if (unlikely(ret != 0)) return 1;
 
-        vma_tree.r_start = (virt_addr_t)get_kernel_iomap();
+        vma_tree.r_start = (virt_addr_t)get_kernel_vmmap();
         vma_tree.r_end = (virt_addr_t)KERNEL_VMMMAP + KERNEL_VMMAP_LEN;
 
         return 0;

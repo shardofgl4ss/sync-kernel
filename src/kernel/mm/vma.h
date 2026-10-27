@@ -48,7 +48,10 @@ extern void vma_remove(vma_region_t *vm_tree, kernel_vma_t *_Nullable vma);
 /* Called internally by vm_rb_remove_by_addr() */
 extern kernel_vma_t *vma_search(vma_region_t *vm_tree, virt_addr_t addr);
 extern void vma_remove_by_addr(vma_region_t *vm_tree, virt_addr_t addr);
-extern void *vma_alloc_region(void);
-extern void vma_free_region(void);
+_hot_
+void vma_free_area(vma_region_t *vm_tree, virt_addr_t addr);
+/* returns VMA_INVALID_PTR on failure. */
+_hot_ _malloc_arg_(vma_free_area, 1)
+kernel_vma_t *vma_alloc_area(vma_region_t *vm_tree, usize area_size, const vma_flags_t flags, void *_Nullable extra);
 extern int vma_subsystem_init(void);
 

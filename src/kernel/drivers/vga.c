@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "vga.h"
 #include "kctype.h"
 #include "kstring.h"
 #include "types.h"
+#include "vga.h"
+#include "vmalloc.h"
+
+
+static constexpr phys_addr_t VGA_GRAPHICS_ADDR = 0xA0000;
+static constexpr usize VGA_GRAPHICS_WINDOW_SZ = 1024 * 64;
+
 
 // fg | (bg << 4), sets the kernel tty? init color.
 static constexpr enum vga_color VGA_INIT_COLOR = (VGA_COLOR_LIGHT_CYAN | (VGA_COLOR_BLACK << 4));
@@ -102,11 +108,15 @@ static void vga_write_cell(vga_cell_t cell)
 
 void vga_init(void)
 {
-	static constexpr vga_cell_t ch = {.ch = ' ', .color = VGA_INIT_COLOR};
+        void *addr = ioremap(VGA_GRAPHICS_ADDR, VGA_GRAPHICS_WINDOW_SZ, VM_FG_MMIO_FLAGS);
 
-	for (int i = 0; i < VGA_CELLS; i++)
-		VGA_OUT[i] = ch;
-	kvga.color = VGA_INIT_COLOR;
+        memset(addr, 69, 4096);
+
+	// static constexpr vga_cell_t ch = {.ch = ' ', .color = VGA_INIT_COLOR};
+	//
+	// for (int i = 0; i < VGA_CELLS; i++)
+	// 	VGA_OUT[i] = ch;
+	// kvga.color = VGA_INIT_COLOR;
 }
 
 

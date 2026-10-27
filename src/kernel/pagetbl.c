@@ -25,27 +25,15 @@ extern char _kphys_end[];
 #define _Nullable
 #define _Nonnull
 
-#define KPT_NOT_PRESENT ((void *)-2)
+#define KPT_NOT_PRESENT ((void *)-1)
 
 // static struct kslab_cache pt_cache = {};
 // static const char *PT_CACHE_IDENTIFIER = "page_tbl_struct";
 
 
 
-static inline void tlb_invl_page(u64 vaddr)
-{
-        __asm__ volatile (
-                "invlpg (%0)"
-                :
-                : "r"(vaddr)
-                : "memory"
-        );
-}
 
-
-
-
-static inline PageTable *kpt_get_l4(void)
+PageTable *kpt_get_l4(void)
 {
 	phys_addr_t cr3;
         __asm__ volatile (
@@ -54,7 +42,7 @@ static inline PageTable *kpt_get_l4(void)
         );
         return phys_to_virt_pm(PT_REBASE(cr3));
 }
-static PageTable *kpt_get_l3(void *vaddr, PageTable *_Nullable l4)
+PageTable *kpt_get_l3(void *vaddr, PageTable *_Nullable l4)
 {
         if (l4) {
                 return phys_to_virt_pm(PT_REBASE(l4->entries[page_l4_idx(vaddr)]));
@@ -63,7 +51,7 @@ static PageTable *kpt_get_l3(void *vaddr, PageTable *_Nullable l4)
         return phys_to_virt_pm(PT_REBASE(pml4->entries[page_l4_idx(vaddr)]));
 
 }
-static PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3)
+PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3)
 {
         if (l3) {
                 return phys_to_virt_pm(PT_REBASE(l3->entries[page_l3_idx(vaddr)]));
@@ -78,7 +66,7 @@ static PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3)
 
         return phys_to_virt_pm(PT_REBASE(e));
 }
-static PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
+PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
 {
         if (l2) {
                 return phys_to_virt_pm(PT_REBASE(l2->entries[page_l2_idx(vaddr)]));
@@ -98,7 +86,7 @@ static PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
 
 
 /* Returns a physmap ptr to a valid page table if it exists. If not, this allocates one and returns it. */
-static PageTable *return_pt_or_alloc(u64 *const restrict pte)
+PageTable *return_pt_or_alloc(u64 *const restrict pte)
 {
         if (!(*pte & PT_FLAG_PRESENT)) {
                 PageTable *p = kbud_alloc(BUDDY_ORDER_4K);
@@ -170,16 +158,8 @@ phys_addr_t kpt_get_phys(void *vaddr)
 
 
 
-void virt_map_page(void *vaddr)
-{
-        (void)vaddr;
-}
-
-
-
-
 /* Unmaps the given 4kb memory region, rounded down to the nearest 4KB */
-void virt_unmap_page(void *vaddr)
+void kpt_unmap_page(void *vaddr)
 {
         if (unlikely(!vaddr)) return;
         usize valign = PAGE_ALIGNDOWN((uintptr_t)vaddr);
@@ -196,30 +176,10 @@ void virt_unmap_page(void *vaddr)
 
 
 
-void *kmap(void *phys, void *virt, u64 bytes, enum addrspace_alloc_type type)
-{
-        (void)phys;
-        (void)virt;
-        (void)bytes;
-        (void)type;
-        return NULL;
-}
-
-
-
-
 void kstack_guard_init(void)
 {
-        virt_unmap_page((void *)kstack_guard);
-        virt_unmap_page((void *)kstack_top);
-}
-
-
-
-
-/* All preinit data and code after this function is reused memory. */
-static void unmap_preinit_mem(void)
-{
+        kpt_unmap_page((void *)kstack_guard);
+        kpt_unmap_page((void *)kstack_top);
 }
 
 
@@ -291,6 +251,7 @@ static void remap_bootmem_dmap_pages(PageTable *l4, void *dmap, const usize rams
 
 
 
+/* All preinit data and code after this function is reused memory. */
 static void reallocate_bootmem_pages(void)
 {
         extern char __prebegin[];
@@ -341,7 +302,6 @@ int kern_uhalf_init()
 {
         reallocate_bootmem_pages();
         kstack_guard_init();
-        unmap_preinit_mem();
 
         return 0;
 }
