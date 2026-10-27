@@ -24,8 +24,15 @@ struct rb_tree {
 
 
 /* requires a subsystem to properly identify where to insert the node, as the RB tree does not have the data information. */
-extern void rb_insert(struct rb_tree *tree, struct rb_node *node, struct rb_node *parent, struct rb_node **link);
+extern void rb_insert(struct rb_tree *restrict tree, struct rb_node *node, struct rb_node *parent, struct rb_node **link);
 /* returns a rb_node to be freed by any subsystem. */
-extern struct rb_node *rb_remove(struct rb_tree *tree, struct rb_node *node);
+extern struct rb_node *rb_remove(struct rb_tree *restrict tree, struct rb_node *node);
+
+extern struct rb_node *rb_first(const struct rb_tree *restrict tree);
+extern struct rb_node *rb_last(const struct rb_tree *restrict tree);
+
+extern struct rb_node *rb_next(struct rb_node *node);
+extern struct rb_node *rb_prev(struct rb_node *node);
+
 extern struct rb_tree rb_inittree(void);
 
