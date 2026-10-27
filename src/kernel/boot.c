@@ -20,6 +20,8 @@ _preinit_zeroed_
 struct preinit_allocator preinit_pfa = {};
 _preinit_zeroed_
 struct multiboot_tag_mmap *multiboot2_tmmap = NULL;
+_preinit_zeroed_
+struct multiboot_tag_framebuffer *mbt_framebuf = NULL;
 
 extern char _kphys_start[];
 extern char _kphys_end[];
@@ -121,15 +123,18 @@ static void pf_init_region(const usize region, const mapentry_t *restrict ent)
 {
         const u64 entry_start = ent->addr;
         const u64 entry_end   = ent->addr + ent->len;
-        const u64 kernel_sz   = (u64)_kphys_end - (u64)_kphys_start;
+        // const u64 kernel_sz   = (u64)_kphys_end - (u64)_kphys_start;
 
         void *addr = (void *)ent->addr;
         usize len = ent->len;
 
         if (unlikely(entry_start <= (u64)_kphys_start
                     && entry_end >= (u64)_kphys_end)) {
-                addr = (u8 *)addr + kernel_sz;
-                len -= kernel_sz;
+                const u64 kspan = (u64)_kphys_end - ent->addr;
+                addr = (void *)((u64)_kphys_end);
+                len -= kspan;
+                // addr = (u8 *)addr + kernel_sz;
+                // len -= kernel_sz;
         }
 
         preinit_pfa.region[region] = addr;
@@ -221,6 +226,10 @@ static void *alloc_frame(void)
                 
                 frame = r->top;
 
+                if (unlikely((uintptr_t)frame >= 0x40000000)) {
+                        die("alloc_frame out of bounds");
+                }
+
                 r->top--;
                 r->cur_frames--;
 
@@ -294,8 +303,8 @@ static void pt_init_kcode(PageTable *const pt_l4)
 {
         /* this is basically just another direct map, --------- *
          * but it only goes upto the size of the kernel image.  */
-        const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
-        const u64 pt_l1_count = ((kernsz + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
+        // const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
+        const u64 pt_l1_count = (((u64)_kphys_end + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
 
         if (pt_l1_count > PT_ENTRIES) die("pt_init_kcode() needs some refactoring!");
 
@@ -313,10 +322,10 @@ static void pt_init_kcode(PageTable *const pt_l4)
         /* This is hard coded to have only one PD for kernel code. It is about  *
          * 1gb. It should be enough. If not, it needs refactored. ------------- */
         for (usize i = 0; i < pt_l1_count; i++) {
-                u64 *const restrict pd_e = &pt_l2->entries[l2_entry_idx + i];
+                u64 *volatile const restrict pd_e = &pt_l2->entries[l2_entry_idx + i];
                 PageTable *pt_l1 = chk_pt_alloc(pd_e);
 
-                *pd_e = (u64)pt_l1 | PT_FLAGS_RW;
+                // *pd_e = (u64)pt_l1 | PT_FLAGS_RW;
                 for (usize j = 0; j < PT_ENTRIES; j++) {
                         pt_l1->entries[j] = physbase | PT_FLAGS_RW;
                         physbase += sizeof(PageTable);
@@ -391,10 +400,32 @@ void start_kernel(void *mbh)
 {
         struct multiboot_tag_mmap *map = (void *)find_mbt(mbh, MULTIBOOT_TAG_TYPE_MMAP);
         multiboot2_tmmap = map;
+        mbt_framebuf = (void *)find_mbt(mbh, MULTIBOOT_TAG_TYPE_FRAMEBUFFER);
 
         alloc_init(map);
         init_higher_half();
         buddy_handoff();
         trampoline();
 }
+
+
+// non-preinit past here.
+
+
+struct framebuffer_data __boot_fb_data = {};
+
+
+void parse_mb2_entries(void) 
+{
+        struct multiboot_tag_framebuffer_common *s = &mbt_framebuf->common;
+        struct framebuffer_data *d = &__boot_fb_data;
+
+        d->fb_addr = s->framebuffer_addr;
+        d->fb_bits_per_pixel = s->framebuffer_bpp;
+        d->fb_height = s->framebuffer_height;
+        d->fb_width = s->framebuffer_width;
+        d->fb_pitch = s->framebuffer_pitch;
+        d->fb_type = s->framebuffer_type;
+}
+
 
