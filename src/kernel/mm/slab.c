@@ -83,9 +83,7 @@ int kslab_cache_create(kslab_cache_t *cache, const char *identifier, usize objsi
         usize ctx_waste = (usize)-1; 
 
 
-        enum buddy_block_order order = 0;
-
-        for (int i = 0; i < max_order; i++) {
+        for (bud_order_t i = 0; i < max_order; i++) {
                 const usize size = (1ULL << i) * PAGESIZE;
                 const usize pad = (alignment - (slab_hdr_sz % alignment)) % alignment;
                 const usize reserved = slab_hdr_sz + pad;
