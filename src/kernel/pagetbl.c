@@ -251,7 +251,7 @@ static void remap_bootmem_kcode_pages(PageTable *l4, void *offs, const usize ker
                                 u64 flags = PT_FLAG_PRESENT;
                                 void *addr = phys_to_virt_of(phy);
 
-                                if (addr >= (void *)_after_ro || addr < (void *)_begin) 
+                                if (addr < (void *)_begin || addr >= (void *)_after_ro)
                                         flags |= PT_FLAG_WRITABLE;
 
                                 pt->entries[k] = phy | flags;
