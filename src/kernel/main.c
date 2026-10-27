@@ -15,6 +15,9 @@
 #include "drivers/vga.h"
 #include "mm/buddy.h"
 #include "mm/kmalloc.h"
+#include "mm/slab.h"
+#include "mm/vma.h"
+#include "mm/vmalloc.h"
 
 _noreturn_
 void kidle(void)
@@ -28,7 +31,7 @@ _noreturn_
 void kernel_main(void)
 {
         mm_init();
-        kern_gdt_init();
+        gdt_init();
         isr_init();
         idt_init();
 

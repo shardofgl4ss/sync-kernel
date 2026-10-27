@@ -62,5 +62,5 @@ extern const struct GDT64 KERN_GDT;
 extern const struct GDT64_Descriptor KERN_GDTR;
 extern const u64 CODE_SEGMENT64;
 
-extern void kern_gdt_init(void);
+extern void gdt_init(void);
 

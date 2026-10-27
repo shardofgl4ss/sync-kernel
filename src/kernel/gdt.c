@@ -30,7 +30,7 @@ const u64 CODE_SEGMENT64 = offsetof(struct GDT64, cs);
 
 extern void gdt_asm_init(const struct GDT64_Descriptor *gdtr);
 
-void kern_gdt_init(void)
+void gdt_init(void)
 {
         gdt_asm_init(&KERN_GDTR);
 }
