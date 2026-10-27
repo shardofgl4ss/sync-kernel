@@ -7,12 +7,27 @@
 #include "slab.h"
 #include "types.h"
 
+#define VMA_INVALID_PTR ((void *)-1)
+
+
+typedef enum vma_flags : u32 {
+	VM_READ		 = 1 << 0,
+	VM_WRITE	 = 1 << 1,
+	VM_EXEC		 = 1 << 2,
+	VM_USER		 = 1 << 3,
+	VM_ANON		 = 1 << 4,
+	VM_IO		 = 1 << 5,
+	VM_NOCACHE	 = 1 << 6,
+	VM_WRITE_THROUGH = 1 << 7,
+	VM_SHARED	 = 1 << 8,
+	VM_GROWSDOWN	 = 1 << 9,
+} vma_flags_t;
 
 typedef struct kernel_vma {
         virt_addr_t vm_start;
         virt_addr_t vm_end;
         page_frame_t **pages;
-        u32 vm_flags;
+        vma_flags_t vm_flags;
         struct rb_node rb_node;
 } kernel_vma_t;
 
@@ -24,7 +39,6 @@ typedef struct vma_region {
 } vma_region_t;
 
 
-
 extern vma_region_t vma_tree;
 extern kslab_cache_t vma_cache;
 
@@ -34,5 +48,7 @@ extern void vma_remove(vma_region_t *vm_tree, kernel_vma_t *_Nullable vma);
 /* Called internally by vm_rb_remove_by_addr() */
 extern kernel_vma_t *vma_search(vma_region_t *vm_tree, virt_addr_t addr);
 extern void vma_remove_by_addr(vma_region_t *vm_tree, virt_addr_t addr);
+extern void *vma_alloc_region(void);
+extern void vma_free_region(void);
 extern int vma_subsystem_init(void);
 
