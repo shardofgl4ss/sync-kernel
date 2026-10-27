@@ -1,11 +1,32 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
+#include "boot.h"
 #include "kctype.h"
 #include "kstring.h"
 #include "types.h"
 #include "vga.h"
 #include "vmalloc.h"
+
+
+void vga_init(void)
+{
+        phys_addr_t addr = __boot_fb_data.fb_addr;
+        usize winsz = __boot_fb_data.fb_pitch * __boot_fb_data.fb_height;
+
+        volatile u8 *vga = ioremap(addr, winsz, VM_FG_MMIO_FLAGS);
+
+        extern char splash_start[];
+        extern char splash_end[];
+
+        usize splash_sz = (usize)splash_end - (usize)splash_start;
+
+        memcpy(vga, (void *)splash_start, splash_sz);
+
+        // for (int i = 0; i < winsz; i++) {
+        //         vga[i] = 255;
+        // }
+}
 
 
 static constexpr phys_addr_t VGA_GRAPHICS_ADDR = 0xA0000;
@@ -106,18 +127,17 @@ static void vga_write_cell(vga_cell_t cell)
 }
 
 
-void vga_init(void)
-{
-        void *addr = ioremap(VGA_GRAPHICS_ADDR, VGA_GRAPHICS_WINDOW_SZ, VM_FG_MMIO_FLAGS);
 
-        memset(addr, 69, 4096);
 
-	// static constexpr vga_cell_t ch = {.ch = ' ', .color = VGA_INIT_COLOR};
-	//
-	// for (int i = 0; i < VGA_CELLS; i++)
-	// 	VGA_OUT[i] = ch;
-	// kvga.color = VGA_INIT_COLOR;
-}
+
+// void vga_init(void)
+// {
+// 	static constexpr vga_cell_t ch = {.ch = ' ', .color = VGA_INIT_COLOR};
+//
+// 	for (int i = 0; i < VGA_CELLS; i++)
+// 		VGA_OUT[i] = ch;
+// 	kvga.color = VGA_INIT_COLOR;
+// }
 
 
 void vga_setcolor(const enum vga_color fg, const enum vga_color bg)
