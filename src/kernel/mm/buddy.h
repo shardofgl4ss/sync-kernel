@@ -13,7 +13,7 @@
 
 typedef uint64_t pfn_t;
 
-typedef enum buddy_block_order {
+typedef enum buddy_block_order : u32 {
         BUDDY_ORDER_4K          = 0,
         BUDDY_ORDER_8K          = 1,
         BUDDY_ORDER_16K         = 2,
