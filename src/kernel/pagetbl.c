@@ -257,7 +257,7 @@ static void reallocate_bootmem_pages(void)
         extern char __prebegin[];
         extern char __preend[];
 
-        const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
+        const u64 kernsz = (u64)_kphys_end;
         const usize ram_max = preinit_pfa.total_ram;
         
         const usize len = preinit_pfa.region[0]->max_frames << 12;
@@ -300,6 +300,7 @@ static void reallocate_bootmem_pages(void)
 
 int kern_uhalf_init()
 {
+        parse_mb2_entries();
         reallocate_bootmem_pages();
         kstack_guard_init();
 
