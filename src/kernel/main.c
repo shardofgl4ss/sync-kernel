@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
+#include "cpu_feats.h"
 #include "gdt.h"
 #include "idt.h"
 #include "io.h"
@@ -30,6 +31,7 @@ void kidle(void)
 _noreturn_
 void kernel_main(void)
 {
+        cpu_get_capabilities();
         mm_init();
         vga_init();
         gdt_init();
