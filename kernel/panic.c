@@ -6,7 +6,7 @@
 #include "io.h"
 #include "irq.h"
 #include "stdio.h"
-#include "drivers/vga.h"
+#include "video/vga/vga_text.h"
 
 
 _Noreturn void panic(char *panicmsg)

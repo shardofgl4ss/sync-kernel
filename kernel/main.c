@@ -13,7 +13,7 @@
 #include "panic.h"
 #include "stdio.h"
 
-#include "drivers/vga.h"
+#include "video/vga/vga_text.h"
 #include "mm/buddy.h"
 #include "mm/kmalloc.h"
 #include "mm/slab.h"

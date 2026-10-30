@@ -5,7 +5,7 @@
 #include "kctype.h"
 #include "kstring.h"
 #include "types.h"
-#include "vga.h"
+#include "vga_text.h"
 #include "vmalloc.h"
 
 

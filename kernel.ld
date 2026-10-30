@@ -132,5 +132,8 @@ SECTIONS
         {
                 *(.eh_frame)
                 *(.eh_frame_hdr)
+                *(.comment)
+                *(.note*)
+                *(.note.GNU-stack)
         }
 }

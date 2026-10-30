@@ -74,6 +74,8 @@ run.sh
 build/
 uefi/
 temp/
+scripts/
+img/
 
 # qemu
 qemu.log

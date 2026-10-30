@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "isr.h"
 #include "idt.h"
 #include "io.h"
 #include "irq.h"
+#include "isr.h"
 #include "panic.h"
 #include "stdio.h"
-#include "vga.h"
+
+#include "video/vga/vga_text.h"
 
 extern void *isr_table[256];
 extern char CODE_SEGMENT64;
