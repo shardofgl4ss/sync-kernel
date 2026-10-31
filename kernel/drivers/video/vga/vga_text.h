@@ -3,51 +3,38 @@
 
 #pragma once
 
-enum vga_color {
-	VGA_COLOR_BLACK = 0,
-	VGA_COLOR_BLUE = 1,
-	VGA_COLOR_GREEN = 2,
-	VGA_COLOR_CYAN = 3,
-	VGA_COLOR_RED = 4,
-	VGA_COLOR_MAGENTA = 5,
-	VGA_COLOR_BROWN = 6,
-	VGA_COLOR_LIGHT_GREY = 7,
-	VGA_COLOR_DARK_GREY = 8,
-	VGA_COLOR_LIGHT_BLUE = 9,
-	VGA_COLOR_LIGHT_GREEN = 10,
-	VGA_COLOR_LIGHT_CYAN = 11,
-	VGA_COLOR_LIGHT_RED = 12,
-	VGA_COLOR_LIGHT_MAGENTA = 13,
-	VGA_COLOR_LIGHT_BROWN = 14,
-	VGA_COLOR_WHITE = 15
-};
+#include <types.h>
+#include <macros.h>
 
-enum vga_mode {
-	STDOUT = 1,
-	STDERR = 2 // at the moment, STDERR just makes output red lol
-};
+#include "vga.h"
+
+typedef struct vga_char {
+	u8 ch;
+	u8 color;
+} _packed_ vga_cell_t;
+
 
 /* initializes the vga screen to nothing and sets color to VGA_INIT_COLOR */
-extern void vga_init(void);
+extern void vga_text_init(void);
 
 /* sets any text outputted after this is called to fg, bg */
-extern void vga_setcolor(enum vga_color fg, enum vga_color bg);
+extern void vga_text_setcolor(vga_color_t fg, vga_color_t bg);
 
 /* Writes a whole string to screen */
-void vga_write(const char *s, int len);
+extern void vga_text_write(const char *s, int len);
 
 /* puts a single character on the screen */
-extern void vga_putchar(char c);
+extern void vga_text_putchar(char c);
 
 /* puts a string on the screen */
-extern void vga_puts(const char *str);
+extern void vga_text_puts(const char *str);
 
 /* clears the entire screen */
-extern void vga_clear(void);
+extern void vga_text_clear(void);
 
 /* clears the entire line after the cursor */
-extern void vga_clear_line(void);
+extern void vga_text_clear_line(void);
 
 /* returns the current color */
-extern enum vga_color vga_get_color(void);
+extern vga_color_t vga_text_get_color(void);
 

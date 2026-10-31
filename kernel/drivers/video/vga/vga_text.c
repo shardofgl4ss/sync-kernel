@@ -1,42 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "boot.h"
-#include "kctype.h"
-#include "kstring.h"
-#include "types.h"
+#include "vga.h"
 #include "vga_text.h"
-#include "vmalloc.h"
 
-
-
-// void vga_init(void)
-// {
-        // phys_addr_t addr = __boot_fb_data.fb_addr;
-        // usize winsz = __boot_fb_data.fb_pitch * __boot_fb_data.fb_height;
-        //
-        // volatile u8 *vga = ioremap(addr, winsz, VM_FG_MMIO_FLAGS);
-        //
-        // for (int i = 0; i < winsz; i++) {
-        //         vga[i] = 255;
-        // }
-
-        // extern char splash_start[];
-        // extern char splash_end[];
-        //
-        // usize splash_sz = (usize)splash_end - (usize)splash_start;
-        //
-        // memcpy(vga, (void *)splash_start, splash_sz);
-
-// }
-
-
-static constexpr phys_addr_t VGA_GRAPHICS_ADDR = 0xA0000;
-static constexpr usize VGA_GRAPHICS_WINDOW_SZ = 1024 * 64;
+#include <boot.h>
+#include <kctype.h>
+#include <kstring.h>
+#include <types.h>
+#include <vmalloc.h>
 
 
 // fg | (bg << 4), sets the kernel tty? init color.
-static constexpr enum vga_color VGA_INIT_COLOR = (VGA_COLOR_LIGHT_CYAN | (VGA_COLOR_BLACK << 4));
+static constexpr vga_color_t VGA_INIT_COLOR = (VGA_COLOR_LIGHT_CYAN | (VGA_COLOR_BLACK << 4));
 static constexpr int VGA_TABSTOP = 8;
 
 static constexpr int VGA_WIDTH = 80;
@@ -50,14 +26,6 @@ static constexpr int VGA_MAX_STRING_SIZE = VGA_CELLS;
 static_assert(VGA_TABSTOP % 2 == 0 && VGA_TABSTOP <= VGA_WIDTH,
                __FILE__ ": VGA_TABSTOP invalid\n");
 
-extern u8 _vga_start;	// linker symbols. probably don't need em.
-extern u8 _vga_end;
-
-
-typedef struct vga_char {
-	u8 ch;
-	u8 color;
-} __attribute__((packed)) vga_cell_t;
 
 static struct kvga_term {
 	int cy;	// current, not cursor
@@ -66,12 +34,11 @@ static struct kvga_term {
 } kvga;	// only vga driver should be able to access this and VGA_OUT.
 
 
-__attribute__((section(".vga"))) //
-static volatile vga_cell_t VGA_OUT[VGA_CELLS];
+static volatile vga_cell_t *VGA_OUT;
 
 
-static inline enum vga_color vga_set_cell_color(const enum vga_color fg,
-                                                const enum vga_color bg)
+static inline vga_color_t vga_set_cell_color(const vga_color_t fg,
+                                                const vga_color_t bg)
 {
 	return (fg | (bg << 4));
 }
@@ -132,8 +99,10 @@ static void vga_write_cell(vga_cell_t cell)
 
 
 
-void vga_init(void)
+void vga_text_init(void)
 {
+        VGA_OUT = ioremap(VGA_TEXT_ADDR, VGA_TEXT_ADDR_LEN, VM_FG_MMIO_FLAGS);
+
 	static constexpr vga_cell_t ch = {.ch = ' ', .color = VGA_INIT_COLOR};
 
 	for (int i = 0; i < VGA_CELLS; i++)
@@ -142,13 +111,13 @@ void vga_init(void)
 }
 
 
-void vga_setcolor(const enum vga_color fg, const enum vga_color bg)
+void vga_text_setcolor(const vga_color_t fg, const vga_color_t bg)
 {
         kvga.color = vga_set_cell_color(fg, bg);
 }
 
 
-void vga_write(const char *s, int len)
+void vga_text_write(const char *s, int len)
 {
 	if (len == 0)
 		return;
@@ -163,7 +132,7 @@ void vga_write(const char *s, int len)
 }
 
 
-void vga_putchar(const char c)
+void vga_text_putchar(const char c)
 {
 	const vga_cell_t cell = {
 		.ch    = c,
@@ -174,7 +143,7 @@ void vga_putchar(const char c)
 }
 
 
-void vga_puts(const char *str)
+void vga_text_puts(const char *str)
 {
 	int len = (int)strlen(str);
 
@@ -182,11 +151,11 @@ void vga_puts(const char *str)
 		len = VGA_MAX_STRING_SIZE - 1;
 	}
 
-	vga_write(str, len);
+	vga_text_write(str, len);
 }
 
 
-void vga_clear(void)
+void vga_text_clear(void)
 {
 	const vga_cell_t ch = {
 		.ch    = ' ',
@@ -201,7 +170,7 @@ void vga_clear(void)
 }
 
 
-void vga_clear_line(void)
+void vga_text_clear_line(void)
 {
 	const vga_cell_t ch = {
 		.ch    = ' ',
@@ -216,7 +185,9 @@ void vga_clear_line(void)
 }
 
 
-enum vga_color vga_get_color(void)
+vga_color_t vga_text_get_color(void)
 {
 	return kvga.color;
 }
+
+
