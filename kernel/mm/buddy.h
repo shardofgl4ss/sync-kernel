@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "builtin.h"
-#include "macros.h"
-#include "pagetbl.h"
-#include "types.h"
+#include <builtin.h>
+#include <macros.h>
+#include <pagetbl.h>
+#include <types.h>
 
 #define PFRAME_MAX_REGIONS      128
 #define PFRAME_MAX_ORDER        11
@@ -79,17 +79,17 @@ extern master_buddy_t MASTER_BUDDY;
 
 /* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error. */
 _hot_ _malloc_
-void *kbud_alloc(const bud_order_t req);
+void *kbud_alloc(bud_order_t req);
 /* allocates at most size PFRAME_MAX_ORDER - 1, returns KPAGE_ERR on error.
  * prefer using kbud_alloc() instead, and track the order. */
 _hot_ _malloc_
 void *kbud_alloc_range(usize sz);
 /* prefer using kbud_free() instead, and track the order. */
 _hot_
-extern void kbud_free_range(void *vaddr, const usize len);
+extern void kbud_free_range(void *vaddr, usize len);
 /* frees at most size PFRAME_MAX_ORDER - 1 */
 _hot_
-void kbud_free(void *vaddr, const bud_order_t order);
+void kbud_free(void *vaddr, bud_order_t order);
 
 
 
