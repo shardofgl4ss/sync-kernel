@@ -7,10 +7,10 @@ DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 INC_DIRS +=
 
 C_SOURCES += $(DIR)/buddy.c \
-	     $(DIR)/kmalloc.c \
 	     $(DIR)/slab.c \
 	     $(DIR)/vma.c \
-	     $(DIR)/vmalloc.c
+	     $(DIR)/vmalloc.c \
+	     $(DIR)/kmalloc.c
 
 ASM_SOURCES +=
 

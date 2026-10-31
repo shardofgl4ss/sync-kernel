@@ -174,10 +174,10 @@ static void pt_map_norm(PageTable *restrict l4, const page_ctx_t *restrict ctx)
 
 
 
-void *ioremap(phys_addr_t phy, usize size, vma_flags_t flags)
+void *ioremap(phys_addr_t phy, usize len, vma_flags_t flags)
 {
         usize offs = phy & (PAGESIZE - 1);
-        usize aligned_size = PAGE_ALIGNUP(size + offs);
+        usize aligned_size = PAGE_ALIGNUP(len + offs);
 
         phys_addr_t aligned_phys = PAGE_ALIGNDOWN(phy);
 

@@ -4,9 +4,10 @@
 DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 
-INC_DIRS += $(DIR)/ $(DIR)/drivers $(DIR)/mm $(DIR)/include
+INC_DIRS += $(DIR) $(DIR)/drivers $(DIR)/mm $(DIR)/include
 
-C_SOURCES += $(DIR)/boot.c \
+C_SOURCES += $(DIR)/bootparams.c \
+	     $(DIR)/boot.c \
 	     $(DIR)/cpu_feats.c \
 	     $(DIR)/gdt.c \
 	     $(DIR)/idt.c \

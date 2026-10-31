@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "buddy.h"
-#include "macros.h"
-#include "rbtree.h"
+#include <macros.h>
+#include <rbtree.h>
+#include <types.h>
+
 #include "slab.h"
-#include "types.h"
 
 #define VMA_INVALID_PTR ((void *)-1)
 

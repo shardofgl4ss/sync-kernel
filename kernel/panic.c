@@ -6,12 +6,12 @@
 #include "io.h"
 #include "irq.h"
 #include "stdio.h"
-#include "video/vga/vga_text.h"
+#include "vga/vga.h"
 
 
 _Noreturn void panic(char *panicmsg)
 {
-	vga_setcolor(VGA_COLOR_RED, VGA_COLOR_BLACK);
+	// vga_setcolor(VGA_COLOR_RED, VGA_COLOR_BLACK);
 	puts(panicmsg);
 	puts("\n");
 	puts("\n----- KERNEL PANIC -----\n");

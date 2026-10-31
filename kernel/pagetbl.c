@@ -3,14 +3,13 @@
 
 #include "pagetbl.h"
 
-#include "types.h"
-#include "kstring.h"
-#include "boot.h"
+#include <boot.h>
+#include <bootparams.h>
+#include <buddy.h>
+#include <kstring.h>
+#include <slab.h>
+#include <types.h>
 
-#include "mm/buddy.h"
-#include "mm/slab.h"
-
-#include "multiboot2.h"
 
 typedef struct multiboot_tag_mmap mmap_t;
 
@@ -95,10 +94,10 @@ PageTable *return_pt_or_alloc(u64 *const restrict pte)
                 memset((void *)p, 0, sizeof(PageTable));
                 *pte = (u64)virt_to_phys_pm(p) | PT_FLAG_PRESENT | PT_FLAG_WRITABLE;
                 return p;
-        } else {
-                phys_addr_t phy = PT_REBASE(*pte);
-                return phys_to_virt_pm(phy);
         }
+
+        phys_addr_t phy = PT_REBASE(*pte);
+        return phys_to_virt_pm(phy);
 
 }
 
@@ -252,13 +251,13 @@ static void remap_bootmem_dmap_pages(PageTable *l4, void *dmap, const usize rams
 
 
 /* All preinit data and code after this function is reused memory. */
-static void reallocate_bootmem_pages(void)
+static void reallocate_bootmem_pages(const struct bootparam_map_info *info)
 {
         extern char __prebegin[];
         extern char __preend[];
 
         const u64 kernsz = (u64)_kphys_end;
-        const usize ram_max = preinit_pfa.total_ram;
+        const usize ram_max = info->ram_max;
         
         const usize len = preinit_pfa.region[0]->max_frames << 12;
         void *vbase = phys_to_virt_pm((phys_addr_t)preinit_pfa.region[0]->base);
@@ -298,10 +297,9 @@ static void reallocate_bootmem_pages(void)
 
 
 
-int kern_uhalf_init()
+int kern_uhalf_init(const kboot_info_t *info)
 {
-        parse_mb2_entries();
-        reallocate_bootmem_pages();
+        reallocate_bootmem_pages(&info->maps);
         kstack_guard_init();
 
         return 0;

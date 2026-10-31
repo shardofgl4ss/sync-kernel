@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include "types.h"
-#include "macros.h"
+#include <bootparams.h>
+#include <macros.h>
+#include <types.h>
 
 
 #define PAGESIZE                4096
@@ -39,8 +40,8 @@ typedef struct kslab_cache kslab_cache_t;
 /* this is metadata, but it isn't just metadata.
  * making it pagealigned makes it easy to do whole-page 
  * pointer arithmetic. it's basically a representation of a whole page. */
-typedef struct _kpage_frame {
-        struct _kpage_frame *next;
+typedef struct kpage_frame {
+        struct kpage_frame *next;
         kslab_cache_t *cache;
 
         /* future someone: as long as order can go upto MAX_ORDER,      *
@@ -52,7 +53,7 @@ typedef struct _kpage_frame {
 static_assert(sizeof(PageTable) == 0x1000, __FILE__ " PageTable size error\n");
 
 /* Returns a physmap ptr to a valid page table if it exists. If not, this allocates one and returns it. */
-extern PageTable *return_pt_or_alloc(u64 *const restrict pte);
+extern PageTable *return_pt_or_alloc(u64 *restrict pte);
 
 _const_ _always_inline_
 static inline u64 page_l4_idx(void *virt) { return (((u64)virt >> 39) & 0x1FF); }
@@ -195,5 +196,5 @@ static inline void *phys_to_virt_of(phys_addr_t p) { return (void *)(p + get_ker
 
 
 
-extern int kern_uhalf_init(void);
+extern int kern_uhalf_init(const kboot_info_t *info);
 
