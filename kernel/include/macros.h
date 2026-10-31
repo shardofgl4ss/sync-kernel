@@ -55,6 +55,7 @@
 #define _preinit_               __attribute__((section(".preinit.text")))
 #define _preinit_zeroed_        __attribute__((section(".preinit.bss")))
 #define _preinit_data_          __attribute__((section(".preinit.data")))
+#define _preinit_ro_            __attribute__((section(".preinit.rodata")))
 
 
 
