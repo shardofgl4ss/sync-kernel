@@ -7,9 +7,7 @@ PROJ_DIR		:= $(CURDIR)
 SRC_DIR			:= kernel
 IMG_DIR			:= img
 
-
 UEFI_DIR		:= uefi
-
 UEFI_CODE		:= $(UEFI_DIR)/OVMF_CODE.fd
 UEFI_VARS		:= $(UEFI_DIR)/OVMF_VARS.fd
 
@@ -77,38 +75,44 @@ endif
 # KVM acceleration with host cpu make it impossible to debug with GDB.
 # But it *is* closer to true hardware behavior then base QEMU.
 run: image $(UEFI_CODE) $(UEFI_VARS)
-	qemu-system-x86_64 $(QEMU_FLAGS)
+	@qemu-system-x86_64 $(QEMU_FLAGS)
 
 
 $(KERNEL_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
-	$(LD) $(LDFLAGS_KRNL) -o $@ $^
+	@printf "  LD        %s\n" "$@"
+	@$(LD) $(LDFLAGS_KRNL) -o $@ $^
 
 
 $(DISK_IMAGE).kernel: $(KERNEL_ELF) | $(DISK_IMAGE)
 	@mkdir -p $(dir $@)
-	mcopy -o -i $(DISK_IMAGE) $(KERNEL_ELF) "::/boot/kernel.elf"
+	@printf "  MCOPY     %s\t%s\n" "$(DISK_IMAGE)" "$(KERNEL_ELF)"
+	@mcopy -o -i $(DISK_IMAGE) $(KERNEL_ELF) "::/boot/kernel.elf"
 	@touch $@
 $(DISK_IMAGE).grub: $(GRUB_FILE) | $(DISK_IMAGE)
 	@mkdir -p $(dir $@)
-	mcopy -o -i $(DISK_IMAGE) $(GRUB_FILE) "::/EFI/BOOT/BOOTX64.EFI"
+	@printf "  MCOPY     %s\t%s\n" "$(DISK_IMAGE)" "$(GRUB_FILE)"
+	@mcopy -o -i $(DISK_IMAGE) $(GRUB_FILE) "::/EFI/BOOT/BOOTX64.EFI"
 	@touch $@
 
 
 
 $(DISK_IMAGE):
 	@mkdir -p $(dir $@)
-	truncate -s 64M $@
-	mkfs.fat -F 32 -n 'SYOS' $@
-	mmd -i $@ "::/boot"
-	mmd -i $@ "::/EFI"
-	mmd -i $@ "::/EFI/BOOT"
-	rm -f $(DISK_IMAGE).kernel $(DISK_IMAGE).grub
+	@printf "  TR        %s\n" "$@"
+	@truncate -s 64M $@
+	@printf "  MKFS      %s\t%s\n" "$@" "FAT32"
+	@mkfs.fat -F 32 -n 'SYOS' $@ >/dev/null 2>&1
+	@mmd -i $@ "::/boot"
+	@mmd -i $@ "::/EFI"
+	@mmd -i $@ "::/EFI/BOOT"
+	@rm -f $(DISK_IMAGE).kernel $(DISK_IMAGE).grub
 
 
 $(GRUB_FILE): grub.cfg
 	@mkdir -p $(dir $@)
-	grub-mkstandalone \
+	@printf "  BOOTLDR   %s\n" "$@"
+	@grub-mkstandalone \
 		-O x86_64-efi \
 		-o $@ \
 		--modules="fat part_gpt multiboot2" \
@@ -116,23 +120,30 @@ $(GRUB_FILE): grub.cfg
 
 
 %.S.o: %.S
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) $(LOCAL_FLAGS) -c -o $@ $<
+	@printf "  AS        %s\n" "$@"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) $(LOCAL_FLAGS) -c -o $@ $<
 
 %.s.o: %.s
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) $(LOCAL_FLAGS) -c -o $@ $<
+	@printf "  AS        %s\n" "$@"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) $(LOCAL_FLAGS) -c -o $@ $<
 
 %.c.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) $(LOCAL_FLAGS) -c -o $@ $<
+	@printf "  CC        %s\n" "$@"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) $(LOCAL_FLAGS) -c -o $@ $<
 
 
 -include $(DEPS)
 
 clean:
-	rm -f $(OBJECTS) $(DEPS)
-	rm -f $(KERNEL_ELF)
+	@rm -f $(OBJECTS)
+	@rm -f $(DEPS)
+	@rm -f $(KERNEL_ELF)
+	@printf "cleaned build artifacts\n"
+
 
 distclean: clean
-	rm -f $(DISK_IMAGE)
-	rm -f $(DISK_IMAGE).kernel $(DISK_IMAGE).grub
-	rm -f $(GRUB_FILE)
+	@rm -f $(DISK_IMAGE)
+	@rm -f $(DISK_IMAGE).kernel $(DISK_IMAGE).grub
+	@rm -f $(GRUB_FILE)
+	@printf "cleaned boot and disk files\n"
 
