@@ -8,7 +8,7 @@
 #include "panic.h"
 #include "stdio.h"
 
-#include "video/vga/vga_text.h"
+#include "vga/vga.h"
 
 extern void *isr_table[256];
 extern char CODE_SEGMENT64;
@@ -179,7 +179,5 @@ void x64_isr_handler(const isr_regs *restrict regs)
 		table[regs->interrupt]();
 	}
 
-
-	vga_setcolor(VGA_COLOR_MAGENTA, VGA_COLOR_BLACK);
 	panic("temporary");
 }
