@@ -30,14 +30,16 @@ typedef size_t usize;
 typedef ssize_t isize;
 
 
-/* phys_addr_t actually means an address from the direct map at --------------- *
- * 0xFFFF800000000000, im just a bit lazy to change it, and ------------------- *
- * dmap_addr_t sounds a lot more boring. for all uses of phys_addr_t, --------- *
- * it means physical dmap addr, not true phys, cause 0x0 is unmapped. --------- *
- * this does however mean for the kernel that phys is at 0xFFFF800000000000. -- */
+/* 
+ * phys_addr_t specifies a hardware RAM address. Not an address in the direct map or anywhere else
+ * ex: 0x4658 is a phys_addr_t. 0xFFFF800000004658 is not.
+ */
 typedef uintptr_t phys_addr_t;
 
-/* Same as above, but for the virtmap at 0xFFFFC00000000000. ------------------ */
+/*
+ * virt_addr_t specifies a virtual address, NOT a hardware RAM address. The opposite of phys_addr_t
+ * ex: 0xFFFF800000004658 is a virt_addr_t. 0x4658 is not.
+ */
 typedef uintptr_t virt_addr_t;
 
 /* ---------------------------------------------------- *
