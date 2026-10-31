@@ -120,11 +120,11 @@ $(GRUB_FILE): grub.cfg
 
 
 %.S.o: %.S
-	@printf "  AS        %s\n" "$@"
+	@printf "  CC        %s\n" "$@"
 	@$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) $(LOCAL_FLAGS) -c -o $@ $<
 
 %.s.o: %.s
-	@printf "  AS        %s\n" "$@"
+	@printf "  CC        %s\n" "$@"
 	@$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) $(LOCAL_FLAGS) -c -o $@ $<
 
 %.c.o: %.c
