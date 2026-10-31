@@ -6,7 +6,9 @@ DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 INC_DIRS +=
 
-C_SOURCES += $(DIR)/vga_text.c
+C_SOURCES += $(DIR)/vga.c \
+	     $(DIR)/vga_graphics.c \
+	     $(DIR)/vga_text.c
 
 ASM_SOURCES +=
 

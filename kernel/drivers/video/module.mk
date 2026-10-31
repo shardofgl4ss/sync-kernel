@@ -6,7 +6,8 @@ DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 INC_DIRS +=
 
-C_SOURCES += $(DIR)/framebuffer.c
+C_SOURCES += $(DIR)/framebuffer.c \
+	     $(DIR)/font.c
 
 ASM_SOURCES +=
 
