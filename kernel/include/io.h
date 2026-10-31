@@ -87,39 +87,72 @@ static inline u32 inl(u16 port)
 
 
 _always_inline_
-static inline void insb(u16 port, void *out, usize wc)
+static inline void insb(u16 port, void *addr, usize count)
 {
         __asm__ volatile (
                 "cld\n\t"
                 "rep insb"
-                : "+D"(out), "+c"(wc)
+                : "+D"(addr), "+c"(count)
                 : "d"(port)
                 : "memory", "cc"
         );
 }
 _always_inline_
-static inline void insw(u16 port, void *out, usize wc)
+static inline void insw(u16 port, void *addr, usize count)
 {
         __asm__ volatile (
                 "cld\n\t"
                 "rep insw"
-                : "+D"(out), "+c"(wc)
+                : "+D"(addr), "+c"(count)
                 : "d"(port)
                 : "memory", "cc"
         );
 }
 _always_inline_
-static inline void insl(u16 port, void *out, usize wc)
+static inline void insl(u16 port, void *addr, usize count)
 {
         __asm__ volatile (
                 "cld\n\t"
                 "rep insl"
-                : "+D"(out), "+c"(wc)
+                : "+D"(addr), "+c"(count)
                 : "d"(port)
                 : "memory", "cc"
         );
 }
 
+_always_inline_
+static inline void outsb(u16 port, void *addr, usize count)
+{
+        __asm__ volatile (
+                "cld\n\t"
+                "rep insb"
+                : "+S"(addr), "+c"(count)
+                : "d"(port)
+                : "memory", "cc"
+        );
+}
+_always_inline_
+static inline void outsw(u16 port, void *addr, usize count)
+{
+        __asm__ volatile (
+                "cld\n\t"
+                "rep insw"
+                : "+S"(addr), "+c"(count)
+                : "d"(port)
+                : "memory", "cc"
+        );
+}
+_always_inline_
+static inline void outsl(u16 port, void *addr, usize count)
+{
+        __asm__ volatile (
+                "cld\n\t"
+                "rep outsl"
+                : "+S"(addr), "+c"(count)
+                : "d"(port)
+                : "memory", "cc"
+        );
+}
 
 _always_inline_
 static inline void x86_hlt(void)
