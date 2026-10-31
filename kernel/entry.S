@@ -191,8 +191,8 @@ stub_perror:
         pop     %ecx
         pop     %esi
 
-	movb    $'A', %al
-	outb    %al, $0xe9
+	# movb    $'A', %al
+	# outb    %al, $0xe9
 
         cmp     $1, %ah
         mov     $1, %ah
