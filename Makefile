@@ -53,7 +53,7 @@ QEMU_UEFI		:= -drive if=pflash,format=raw,readonly=on,file=$(UEFI_CODE) \
 
 QEMU_DISK 		:= -drive format=raw,file=$(DISK_IMAGE)
 
-QEMU_FLAGS		:= $(QEMU_UEFI) $(QEMU_DISK) -no-reboot -no-shutdown
+QEMU_FLAGS		:= $(QEMU_UEFI) $(QEMU_DISK) -no-reboot -no-shutdown -d cpu_reset -debugcon stdio -global isa-debugcon.iobase=0xe9
 
 QEMU_KVM		?= 0
 
@@ -67,7 +67,7 @@ ifeq ($(BUILD_TYPE), release)
 else
 	CFLAGS += $(DEBUG_FLAGS)
 	CPPFLAGS += -DDEBUG
-	QEMU_FLAGS += -s -S -d cpu_reset -debugcon stdio -global isa-debugcon.iobase=0xe9
+	QEMU_FLAGS += -s -S
 endif
 
 
