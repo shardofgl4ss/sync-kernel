@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "vga.h"
-#include "vga_text.h"
-
 #include <boot.h>
 #include <kctype.h>
 #include <kstring.h>
 #include <types.h>
-#include <vmalloc.h>
+#include <mm/vmalloc.h>
+
+#include "vga.h"
+
+#include "vga_text.h"
 
 
 // fg | (bg << 4), sets the kernel tty? init color.

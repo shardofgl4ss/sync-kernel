@@ -3,11 +3,8 @@
 
 #pragma once
 
-#include "macros.h"
-#include "types.h"
-#include "multiboot2.h"
-
-#include "mm/buddy.h"
+#include <mm/buddy.h>
+#include <types.h>
 
 typedef struct preinit_region {
         page_frame_t *top;

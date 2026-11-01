@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
+#include <builtin.h>
+#include <kstring.h>
+#include <macros.h>
+#include <pagetbl.h>
+#include <panic.h>
+#include <types.h>
+
 #include "buddy.h"
 
-#include "boot.h"
-#include "kstring.h"
-#include "macros.h"
-#include "multiboot2.h"
-#include "pagetbl.h"
-#include "panic.h"
-#include "types.h"
-
-#include "builtin.h"
 
 extern char _kphys_start[];
 extern char _kphys_end[];
@@ -53,7 +51,7 @@ static slave_buddy_t *find_buddy_slave(const phys_addr_t phy)
         }
 
         isize lo = 0;
-        isize hi = MASTER_BUDDY.region_count - 1;
+        isize hi = (isize)MASTER_BUDDY.region_count - 1;
         isize owner = -1;
 
         while (lo <= hi) {

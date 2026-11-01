@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "pagetbl.h"
-
 #include <boot.h>
 #include <bootparams.h>
-#include <buddy.h>
 #include <kstring.h>
-#include <slab.h>
+#include <mm/buddy.h>
+#include <mm/slab.h>
 #include <types.h>
+
+#include "pagetbl.h"
 
 
 typedef struct multiboot_tag_mmap mmap_t;

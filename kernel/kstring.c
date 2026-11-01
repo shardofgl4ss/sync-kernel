@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
+#include <str_io.h>
+
 #include "kstring.h"
-#include "io.h"
-#include "str_io.h"
 
 
 size_t strlen(const char *restrict str)

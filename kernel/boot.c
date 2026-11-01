@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "boot.h"
-
 #include <bootparams.h>
-#include <buddy.h>
 #include <io.h>
 #include <kstring.h>
 #include <macros.h>
+#include <mm/buddy.h>
 #include <multiboot2.h>
 #include <pagetbl.h>
 #include <types.h>
+
+#include "boot.h"
+
 
 #define ISA_DEBUGCON_PORT       ((u16)0xE9)
 #define MB2_TAG_ERR             ((void *)-1)

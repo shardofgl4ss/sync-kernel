@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "types.h"
+#include <types.h>
 
 enum GDT_BITS {
 	GDT_PRESENT    = 1 << 7,                /**< Loaded in memory.  */

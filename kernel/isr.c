@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "idt.h"
-#include "io.h"
-#include "irq.h"
-#include "isr.h"
-#include "panic.h"
-#include "stdio.h"
+#include <idt.h>
+#include <io.h>
+#include <irq.h>
+#include <panic.h>
+#include <stdio.h>
 
-#include "vga/vga.h"
+#include "isr.h"
+
 
 extern void *isr_table[256];
 extern char CODE_SEGMENT64;
@@ -30,11 +30,11 @@ void isr_init(void)
 {
 	const uintptr_t addr = (uintptr_t)(&CODE_SEGMENT64);
 	for (size_t i = 0; i < 256; i++) {
-		idt64_setgate(i,
+		idt64_setgate((int)i,
 		              isr_table[i],
 		              (u16)addr,
 		              vector_switch_idtflags(i));
-		idt64_enablegate(i);
+		idt64_enablegate((int)i);
 	}
 }
 

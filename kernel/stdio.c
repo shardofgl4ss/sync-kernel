@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
+#include <types.h>
+
 #include "stdio.h"
-#include "types.h"
 
 // These are just wrappers to more easily swap them if needed later on.
 

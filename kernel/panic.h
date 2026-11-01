@@ -3,5 +3,9 @@
 
 #pragma once
 
-extern _Noreturn void panic(char *panicmsg);
+#include <macros.h>
+
+
+_noreturn_
+extern void panic(char *panicmsg);
 

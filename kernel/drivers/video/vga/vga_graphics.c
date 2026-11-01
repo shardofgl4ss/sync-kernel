@@ -4,6 +4,7 @@
 #include <types.h>
 
 #include "vga.h"
+
 #include "vga_graphics.h"
 
 

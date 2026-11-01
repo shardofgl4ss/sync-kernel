@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "types.h"
+#include <types.h>
 
 extern void putchar(u8 c);
 extern void puts(const char *str);

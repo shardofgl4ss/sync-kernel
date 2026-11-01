@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "rbtree.h"
+#include <types.h>
 
-#include "types.h"
-#include "macros.h"
+#include "rbtree.h"
 
 
 static inline bool rb_chk_black(const struct rb_node *restrict x)
@@ -84,7 +83,7 @@ void rb_fixins(struct rb_tree *restrict tree, struct rb_node *x)
 
                 const bool unc_right = (parent == grandparent->left);
 
-                struct rb_node *big_unc = (unc_right)
+                struct rb_node *big_unc = unc_right
                         ? grandparent->right
                         : grandparent->left;
 
@@ -98,7 +97,7 @@ void rb_fixins(struct rb_tree *restrict tree, struct rb_node *x)
                         continue;
                 }
 
-                struct rb_node *inner = (unc_right) ? parent->right : parent->left;
+                struct rb_node *inner = unc_right ? parent->right : parent->left;
 
                 if (x == inner) {
                         x = parent;
@@ -145,7 +144,7 @@ void rb_fixdel(struct rb_tree *restrict tree, struct rb_node *x)
                         if (lrotate) rb_lrotate(tree, x->parent);
                         else rb_rrotate(tree, x->parent);
 
-                        x_sibling = (lrotate) ? x->parent->right : x->parent->left;
+                        x_sibling = lrotate ? x->parent->right : x->parent->left;
                         sibling_inner = lrotate ? x->parent->right : x->parent->left;
                         sibling_outer = lrotate ? x->parent->left : x->parent->right;
 

@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
+#include <io.h>
+#include <irq.h>
+#include <macros.h>
+#include <stdio.h>
+
 #include "panic.h"
 
-#include "io.h"
-#include "irq.h"
-#include "stdio.h"
-#include "vga/vga.h"
 
-
-_Noreturn void panic(char *panicmsg)
+_noreturn_
+void panic(char *panicmsg)
 {
 	// vga_setcolor(VGA_COLOR_RED, VGA_COLOR_BLACK);
 	puts(panicmsg);

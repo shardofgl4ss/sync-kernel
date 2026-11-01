@@ -171,9 +171,13 @@ static inline u64 get_kernel_vmmap(void)
 }
 
 
+/* Extracts pml4 ptr from %cr3 and returns a usable virtual pointer. */
 extern PageTable *kpt_get_l4(void);
+/* Extracts pdpt ptr from provided pml4 or goes up the chain to kpt_get_l4, and returns a usable virtual pointer. */
 extern PageTable *kpt_get_l3(void *vaddr, PageTable *_Nullable l4);
+/* Extracts pd ptr from provided pdpt or goes up the chain to kpt_get_l3, and returns a usable virtual pointer. */
 extern PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3);
+/* Extracts pt ptr from provided pd or goes up the chain to kpt_get_l2, and returns a usable virtual pointer. */
 extern PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2);
 
 
@@ -192,7 +196,7 @@ static inline phys_addr_t virt_to_phys_of(void *v) { return (phys_addr_t)((u64)v
 _const_ _always_inline_
 static inline void *phys_to_virt_of(phys_addr_t p) { return (void *)(p + get_kernel_offs()); }
 
-/* probably don't need virt/phys conversion for io. */
+/* virt/phys VMMAP does not have a direct translation. Get the phys-virt addresses from the VMM system. */
 
 
 

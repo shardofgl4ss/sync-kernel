@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "cpu_feats.h"
-
-#include "types.h"
 #include <cpuid.h>
+#include <types.h>
+
+#include "cpu_feats.h"
 
 
 typedef struct cpu_leaf_lim {

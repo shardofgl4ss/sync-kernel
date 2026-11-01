@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
+#include <kstring.h>
+#include <macros.h>
+#include <pagetbl.h>
+#include <panic.h>
+#include <rbtree.h>
+#include <types.h>
+
+#include "slab.h"
+
 #include "vma.h"
 
-#include "kstring.h"
-#include "macros.h"
-#include "pagetbl.h"
-#include "panic.h"
-#include "rbtree.h"
-#include "slab.h"
-#include "types.h"
 
 extern char KERNEL_VMMMAP[];
 static constexpr u64 KERNEL_VMMAP_LEN = (1024ULL * 1024ULL * 1024ULL * 1024ULL) * 64ULL;

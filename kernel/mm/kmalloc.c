@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "kmalloc.h"
-
 #include <bootparams.h>
-#include <buddy.h>
 #include <builtin.h>
 #include <macros.h>
 #include <pagetbl.h>
 #include <panic.h>
-#include <slab.h>
 #include <types.h>
-#include <vma.h>
-#include <vmalloc.h>
+
+#include "vma.h"
+#include "vmalloc.h"
+
+#include "kmalloc.h"
+
 
 #define ALIGNMENT       0x10
 

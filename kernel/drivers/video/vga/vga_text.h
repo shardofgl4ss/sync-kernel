@@ -8,6 +8,7 @@
 
 #include "vga.h"
 
+
 typedef struct vga_char {
 	u8 ch;
 	u8 color;

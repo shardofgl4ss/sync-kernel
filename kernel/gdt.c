@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include <stddef.h>
+#include <types.h>
 
 #include "gdt.h"
-#include "types.h"
 
 
 const struct GDT64 KERN_GDT = {

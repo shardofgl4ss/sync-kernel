@@ -3,9 +3,8 @@
 
 #pragma once
 
-#include "types.h"
-
 #include <cpuid.h>
+#include <types.h>
 
 enum {
 	CPUID_L1_ECX_SSE3	  = 1 << 0,

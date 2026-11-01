@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "vmalloc.h"
+#include <pagetbl.h>
+#include <types.h>
 
-#include "pagetbl.h"
-#include "slab.h"
-#include "types.h"
 #include "vma.h"
 
-#include "mm/buddy.h"
+#include "vmalloc.h"
+
 
 static constexpr usize SZ_2M = 2ULL * 1024ULL * 1024ULL;
 static constexpr usize SZ_1G = 1ULL * 1024ULL * 1024ULL * 1024ULL;

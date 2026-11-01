@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
-#include "slab.h"
+#include <kstring.h>
+#include <macros.h>
+#include <panic.h>
+#include <types.h>
 
 #include "buddy.h"
-#include "kstring.h"
-#include "macros.h"
-#include "panic.h"
-#include "types.h"
+
+#include "slab.h"
+
 
 #define KSLAB_PRESET_MAX_EMPTY  4
 
