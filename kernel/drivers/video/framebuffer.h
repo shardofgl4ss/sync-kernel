@@ -26,11 +26,11 @@ typedef struct {
 typedef struct framebuffer framebuffer_t;
 
 typedef struct framebuf_ops {
-        void (*blit_pixel)(framebuffer_t *, i32 x, i32 y, fb_rgba_color_t color);
-        void (*fill_rect)(framebuffer_t *, i32 x, i32 y, u32 w, u32 h, fb_rgba_color_t color);
-        void (*scroll)(framebuffer_t *, u32 px_rows);
-        void (*flush)(framebuffer_t *, i32 x, i32 y, u32 w, u32 h);
-        void (*clear)(framebuffer_t *);
+        void (*const blit_pixel)(framebuffer_t *, i32 x, i32 y, fb_rgba_color_t color);
+        void (*const fill_rect)(framebuffer_t *, i32 x, i32 y, i32 w, i32 h, fb_rgba_color_t color);
+        void (*const scroll)(framebuffer_t *, u32 px_rows);
+        void (*const flush)(framebuffer_t *, i32 x, i32 y, i32 w, i32 h);
+        void (*const clear)(framebuffer_t *);
 } fb_ops_t;
 
 

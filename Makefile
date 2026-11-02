@@ -56,18 +56,21 @@ QEMU_DISK 		:= -drive format=raw,file=$(DISK_IMAGE)
 QEMU_FLAGS		:= $(QEMU_UEFI) $(QEMU_DISK) -no-reboot -no-shutdown -d cpu_reset -debugcon stdio -global isa-debugcon.iobase=0xe9
 
 QEMU_KVM		?= 0
+QEMU_GDB_STOP		?= 1
 
 ifeq ($(QEMU_KVM), 1)
 	QEMU_FLAGS += -cpu host -accel kvm
 endif
 
+ifeq ($(QEMU_GDB_STOP), 1)
+	QEMU_FLAGS += -s -S
+endif
 
 ifeq ($(BUILD_TYPE), release)
 	CFLAGS += $(REL_FLAGS)
 else
 	CFLAGS += $(DEBUG_FLAGS)
 	CPPFLAGS += -DDEBUG
-	QEMU_FLAGS += -s -S
 endif
 
 

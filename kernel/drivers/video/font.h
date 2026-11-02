@@ -19,10 +19,11 @@ typedef struct {
 } font_glyph_t;
 
 typedef struct {
-        u8 pixel_h;
-        u8 pixel_w;
         const u8 *font_bitmap;
         const font_glyph_t *font_glyphs;
+        u8 pixel_h;
+        u8 pixel_w;
+        i32 baseline;
 } kfont_t;
 
 
