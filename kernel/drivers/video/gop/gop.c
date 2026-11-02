@@ -38,6 +38,7 @@ static void gop_scroll(framebuffer_t *restrict fb, u32 px_rows)
 
 static void gop_clear(framebuffer_t *restrict fb)
 {
+        // TODO change this function and the scroll one to take a bg arg
         struct gop_pixel_24 col = {};
 
         // These are mainly to make sure the compiler doesn't
@@ -49,7 +50,7 @@ static void gop_clear(framebuffer_t *restrict fb)
         
         volatile struct gop_pixel_24 *restrict px;
         for (u32 y = 0; y < fb->height; y++) {
-                for (u32 x = 0; x < fb->pitch; x++) {
+                for (u32 x = 0; x < fb->width; x++) {
                         px = (volatile struct gop_pixel_24 *)(base + (y * pitch) + (x * bpp));
 			*px = col;
                 }

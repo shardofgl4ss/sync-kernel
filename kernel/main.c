@@ -25,6 +25,7 @@
 _noreturn_
 void kidle(void)
 {
+        kcon_puts("kernel reached idle!\n");
 	for (;;) {
 		x86_hlt();
 	}
@@ -35,7 +36,7 @@ void kernel_main(void)
 {
         cpu_get_capabilities();
         mm_init();
-        console_init();
+        kcon_init();
         gdt_init();
         isr_init();
         idt_init();

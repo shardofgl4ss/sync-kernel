@@ -167,6 +167,9 @@ static inline void con_ctrl_clear(void)
 {
         if (!kconsole.fb->ops->clear) return;
         kconsole.fb->ops->clear(kconsole.fb);
+
+        kconsole.cx = 0;
+        kconsole.cy = 0;
 }
 
 
@@ -212,18 +215,18 @@ static void console_write_cell_at(const char c, u32 x, u32 y)
 }
 
 
-void console_setframebuffer(framebuffer_t *fb)
+void kcon_setframebuffer(framebuffer_t *fb)
 {
         if (fb) kconsole.fb = fb;
 }
 
 
-void console_setfont(const kfont_t *font)
+void kcon_setfont(const kfont_t *font)
 {
         if (font) kconsole.font = font;
 }
 
-void console_setcolor(const fb_rgba_color_t fg, const fb_rgba_color_t bg)
+void kcon_setcolor(const fb_rgba_color_t fg, const fb_rgba_color_t bg)
 {
         kconsole.color_fg = fg;
         kconsole.color_bg = bg;
@@ -247,23 +250,11 @@ void kcon_clear()
 }
 
 
-void console_init(void)
+void kcon_init(void)
 {
 
         framebuffer_t *fb = fbcon_display_init(&KERN_BOOT_INFO);
-        console_setframebuffer(fb);
+        kcon_setframebuffer(fb);
         kcon_puts("SYOS virtualized kernel booting...\n");
-
-        for (int i = 0; i < 1024; i++) {
-                for (int j = 0; j < 10'000'000; j++) {
-                        __asm__ volatile ("nop");
-                }
-
-                if (i % 2 == 0) {
-                        kcon_puts("\t1:\tTest string\ttest!\n");
-                } else {
-                        kcon_puts("\t2:\tstring test\tstring!\n");
-                }
-        }
 }
 
