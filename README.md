@@ -43,7 +43,11 @@ This probably won't compile on Windows or Mac, obviously.
 SYOS is a temporary name. It may not stick.
 
 C standard: C23
+
 Arch: x86-64 only (maybe in the future I will accomodate ARM64)
+
 ABI: SYSV (no-red-zone)
+
 (MAYBE) POSIX complaint in the future.
+
 Syscalls: When I get to them, I will attach a table of them here.
