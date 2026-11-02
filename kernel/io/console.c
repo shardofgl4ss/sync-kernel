@@ -51,6 +51,7 @@ static void console_scroll_by(u32 pixels)
 {
         fb_ops_t *o = kconsole.fb->ops;
         if (o->scroll) o->scroll(kconsole.fb, pixels);
+        kconsole.cy -= pixels;
 }
 
 
@@ -101,8 +102,8 @@ static void console_draw_glyph(const font_glyph_t *restrict glyph, u32 x, u32 y)
         if (!fb->ops->blit_pixel) return;
         const i32 by = (i32)y + font->baseline;
 
-        const auto fn_blit = fb->ops->blit_pixel;
-        const auto fg = kconsole.color_fg;
+        auto const fn_blit = fb->ops->blit_pixel;
+        auto const fg = kconsole.color_fg;
         const u8 *bitmap = font->font_bitmap;
         const i32 gly_w = glyph->width;
         const i32 gly_h = glyph->height;
@@ -136,10 +137,10 @@ static inline void con_ctrl_newl(void)
 {
         con_ctrl_carriage_ret();
 
-        kconsole.cy += kconsole.font->pixel_h;
-        if (kconsole.cy >= kconsole.fb->height) {
+        if (kconsole.cy + kconsole.font->pixel_h >= kconsole.fb->height)
                 console_scroll();
-        }
+        else
+                kconsole.cy += kconsole.font->pixel_h;
 
         kconsole.cx = 0;
 }
@@ -190,6 +191,11 @@ static void console_ascii_ctrl(const char c)
 static void console_write_cell_at(const char c, u32 x, u32 y)
 {
         const kfont_t *font = kconsole.font;
+
+        if (kconsole.cy + kconsole.font->pixel_h >= kconsole.fb->height) {
+                con_ctrl_newl();
+                y -= kconsole.font->pixel_h;
+        }
 
         if (!isprint(c)) {
                 console_ascii_ctrl(c);
@@ -246,12 +252,18 @@ void console_init(void)
 
         framebuffer_t *fb = fbcon_display_init(&KERN_BOOT_INFO);
         console_setframebuffer(fb);
-        // const font_glyph_t *g = &kconsole.font->font_glyphs['a' - ' '];
-        // console_draw_glyph(g, 0, 0);
         kcon_puts("SYOS virtualized kernel booting...\n");
-        kcon_puts("Test string\t1!\n");
-        kcon_puts("Test string\t\t2!\n");
-        kcon_puts("Test string\ttest\t3!\n");
-        kcon_puts("Test string\ntest\t4!\n");
+
+        for (int i = 0; i < 1024; i++) {
+                for (int j = 0; j < 10'000'000; j++) {
+                        __asm__ volatile ("nop");
+                }
+
+                if (i % 2 == 0) {
+                        kcon_puts("\t1:\tTest string\ttest!\n");
+                } else {
+                        kcon_puts("\t2:\tstring test\tstring!\n");
+                }
+        }
 }
 

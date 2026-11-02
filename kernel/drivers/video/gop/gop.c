@@ -89,7 +89,7 @@ static void gop_fill_rect(framebuffer_t *restrict fb, i32 x, i32 y, i32 w, i32 h
 
 
 
-static const fb_ops_t gop_funcs = {
+static fb_ops_t gop_funcs = {
         .blit_pixel = &gop_blit,
         .fill_rect = &gop_fill_rect,
         .clear = &gop_clear,
