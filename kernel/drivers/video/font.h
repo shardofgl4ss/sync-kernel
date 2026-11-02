@@ -21,9 +21,9 @@ typedef struct {
 typedef struct {
         const u8 *font_bitmap;
         const font_glyph_t *font_glyphs;
+        i32 baseline;
         u8 pixel_h;
         u8 pixel_w;
-        i32 baseline;
 } kfont_t;
 
 
