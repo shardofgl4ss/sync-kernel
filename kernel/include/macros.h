@@ -58,6 +58,7 @@
 #define _preinit_ro_            __attribute__((section(".preinit.rodata")))
 
 
+#define MFENCE()                __asm__ volatile ("" ::: "memory")
 
 
 #define SY_ALIGN_UP(x, up_to)           (((x) + ((up_to) - 1)) & ~((up_to) - 1))

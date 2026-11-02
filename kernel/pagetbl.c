@@ -11,8 +11,6 @@
 #include "pagetbl.h"
 
 
-typedef struct multiboot_tag_mmap mmap_t;
-
 extern char _begin[];
 extern char _after_ro[];
 extern char kstack_guard[];
@@ -251,13 +249,13 @@ static void remap_bootmem_dmap_pages(PageTable *l4, void *dmap, const usize rams
 
 
 /* All preinit data and code after this function is reused memory. */
-static void reallocate_bootmem_pages(const struct bootparam_map_info *info)
+static void reallocate_bootmem_pages(const kboot_info_t *info)
 {
         extern char __prebegin[];
         extern char __preend[];
 
-        const u64 kernsz = (u64)_kphys_end;
-        const usize ram_max = info->ram_max;
+        const u64 kernsz = ((u64)_kphys_end - (u64)_kphys_start) + info->load_addr;
+        const usize ram_max = info->maps.ram_max;
         
         const usize len = preinit_pfa.region[0]->max_frames << 12;
         void *vbase = phys_to_virt_pm((phys_addr_t)preinit_pfa.region[0]->base);
@@ -266,9 +264,8 @@ static void reallocate_bootmem_pages(const struct bootparam_map_info *info)
         void *offs = (void *)get_kernel_offs();
 
         PageTable *pml4 = kbud_alloc(BUDDY_ORDER_4K);
-        // TODO: add a kernel warning here to make it clear that reallocation has failed, but it is not fatal.
-        // it may be though, cause slabcache creation shouldn't fail if not OOM. memory too fragged? This early?
         if (pml4 == KPAGE_ERR) return;
+
         memset((void *)pml4, 0, sizeof(PageTable));
         
         remap_bootmem_kcode_pages(pml4, offs, kernsz);
@@ -299,7 +296,7 @@ static void reallocate_bootmem_pages(const struct bootparam_map_info *info)
 
 int kern_uhalf_init(const kboot_info_t *info)
 {
-        reallocate_bootmem_pages(&info->maps);
+        reallocate_bootmem_pages(info);
         kstack_guard_init();
 
         return 0;

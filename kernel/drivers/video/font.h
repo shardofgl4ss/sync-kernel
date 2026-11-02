@@ -18,6 +18,21 @@ typedef struct {
         i8 y_offset;
 } font_glyph_t;
 
-extern const u8 kfont_ibm3270_16px_bitmap[];
-extern const font_glyph_t kfont_ibm3270_16px_glyphs[];
+typedef struct {
+        u8 pixel_h;
+        u8 pixel_w;
+        const u8 *font_bitmap;
+        const font_glyph_t *font_glyphs;
+} kfont_t;
+
+
+// Third Party font assets:
+
+// font from: https://github.com/rbanffy/3270font
+// license: https://github.com/rbanffy/3270font?tab=License-1-ov-file
+extern const kfont_t FONT_IBM_3270_16PX;
+
+// font from: https://github.com/retro-vault/font-vault/
+// license: https://github.com/retro-vault/font-vault/tree/main/source/fonts/oldschool_ibm_vga_8x16
+extern const kfont_t FONT_PX437_IBM_8X16;
 

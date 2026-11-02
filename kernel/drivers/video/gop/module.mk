@@ -6,7 +6,7 @@ DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 INC_DIRS +=
 
-C_SOURCES +=
+C_SOURCES += $(DIR)/gop.c
 
 ASM_SOURCES +=
 

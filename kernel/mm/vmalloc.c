@@ -181,7 +181,7 @@ void *ioremap(phys_addr_t phy, usize len, vma_flags_t flags)
         phys_addr_t aligned_phys = PAGE_ALIGNDOWN(phy);
 
         kernel_vma_t *vma = vma_alloc_area(&vma_tree, aligned_size, flags, NULL);
-        if (vma == VMA_INVALID_PTR) return KPAGE_ERR;
+        if (vma == VMA_INVALID_PTR) return NULL;
 
         const page_ctx_t ctx = {
                 .paddr = aligned_phys,

@@ -146,18 +146,18 @@ static void pf_init_region(const usize region, const struct bootparam_map_entry 
 {
         const u64 entry_start = ent->base;
         const u64 entry_end   = ent->base + ent->len;
-        // const u64 kernel_sz   = (u64)_kphys_end - (u64)_kphys_start;
+        const u64 kernel_sz   = (u64)_kphys_end;
 
         void *addr = (void *)ent->base;
         usize len = ent->len;
 
         if (unlikely(entry_start <= (u64)_kphys_start
                     && entry_end >= (u64)_kphys_end)) {
-                const u64 kspan = (u64)_kphys_end - ent->base;
-                addr = (void *)((u64)_kphys_end);
-                len -= kspan;
-                // addr = (u8 *)addr + kernel_sz;
-                // len -= kernel_sz;
+                // const u64 kspan = (u64)_kphys_end - ent->base;
+                // addr = (void *)((u64)_kphys_end);
+                // len -= kspan;
+                addr = (u8 *)addr + kernel_sz;
+                len -= kernel_sz;
         }
 
         preinit_pfa.region[region] = addr;
@@ -176,25 +176,6 @@ static void pf_init_region(const usize region, const struct bootparam_map_entry 
 
 
 
-// _preinit_
-// static void sort_region_addrs(physmem_pregion_t **r, usize up_to)
-// {
-//         for (usize i = 1; i < up_to; i++) {
-//                 physmem_pregion_t *k = r[i];
-//                 usize j = i;
-//
-//                 while (j > 0 && r[j - 1]->base > k->base) {
-//                         r[j] = r[j - 1];
-//                         j--;
-//                 }
-//
-//                 r[j] = k;
-//         }
-// }
-
-
-
-
 _preinit_
 static void alloc_init(struct bootparam_map_info *maps)
 {
@@ -203,42 +184,13 @@ static void alloc_init(struct bootparam_map_info *maps)
         pi_memset((void *)preinit_pfa.region, (u8)-1, sizeof(preinit_pfa.region));
 
         u8 region_num = 0;
-        for (u8 i = 0; i < maps->count; i++)
-        {
+        for (u8 i = 0; i < maps->count; i++) {
                 pf_init_region(region_num, &(maps->entries[i]));
 
                 if (++region_num > 64) {
                         die(PREINIT_ERR_MEMORY_REGION_CAP);
                 }
         }
-
-        // u8 *begin = (u8 *)map + sizeof(*map);
-        // const u8 *end = (u8 *)map + map->size;
-        //
-        // int regions = 0;
-        // for (u8 *p = begin; p < end; p += map->entry_size) {
-        //         const mapentry_t *const ent = (void *)p;
-        //
-        //
-        //         if (ent->type == MULTIBOOT_MEMORY_ACPI_RECLAIMABLE) {
-        //                 preinit_pfa.ram_bytes += ent->len;
-        //         }
-        //
-        //         if (ent->type != MULTIBOOT_MEMORY_AVAILABLE) {
-        //                 continue;
-        //         }
-        //
-        //         preinit_pfa.ram_bytes += ent->len;
-        //
-        //         pf_init_region(regions, ent);
-        //
-        //         // cant remember if this is at the limit or one off. oh well.
-        //         if (++regions > PFRAME_MAX_REGIONS - 1) {
-        //                 die(PREINIT_ERR_MEMORY_REGION_CAP);
-        //         }
-        // }
-        //
-        // sort_region_addrs(preinit_pfa.region, preinit_pfa.region_count);
 }
 
 
@@ -332,36 +284,52 @@ static void pt_init_dram_map(PageTable *const pt_l4, struct bootparam_map_info *
 
 
 _preinit_ _nonnull_(1)
-static void pt_init_kcode(PageTable *const pt_l4)
+static void pt_init_kcode(PageTable *const pt_l4, kboot_info_t *info)
 {
-        /* this is basically just another direct map, --------- *
-         * but it only goes upto the size of the kernel image.  */
-        // const u64 kernsz = (u64)_kphys_end - (u64)_kphys_start;
-        const u64 pt_l1_count = (((u64)_kphys_end + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
+        extern char _begin[];
+        extern char _after_ro[];
 
-        if (pt_l1_count > PT_ENTRIES) die(PREINIT_ERR_KCODE_REFACTOR);
-
+        phys_addr_t phy = 0x0ULL;
         void *koffs = (void *)KERNEL_OFFSET;
-
         u16 l4_entry_idx = page_l4_idx(koffs);
-        u16 l3_entry_idx = page_l3_idx(koffs);
-        u16 l2_entry_idx = page_l2_idx(koffs);
-        
-        PageTable *pt_l3 = chk_pt_alloc(&pt_l4->entries[l4_entry_idx]);
-        PageTable *pt_l2 = chk_pt_alloc(&pt_l3->entries[l3_entry_idx]);
 
-        u64 physbase = 0x0;
+        /* 
+         * this cant be end - start, without also adding load_addr as bytes.
+         * otherwise _kphys_end - load_addr is cut off.
+         *
+         * It may be better to just use _kphys_end directly, 
+         * and will probably work, but I don't wish to risk it.
+         */
 
-        /* This is hard coded to have only one PD for kernel code. It is about  *
-         * 1gb. It should be enough. If not, it needs refactored. ------------- */
-        for (usize i = 0; i < pt_l1_count; i++) {
-                u64 *volatile const restrict pd_e = &pt_l2->entries[l2_entry_idx + i];
-                PageTable *pt_l1 = chk_pt_alloc(pd_e);
+        const usize kernsz = ((uintptr_t)_kphys_end - (uintptr_t)_kphys_start) + info->load_addr;
+        const usize l1_count = ((kernsz + PT_L2_ENTRYMASK) & ~PT_L2_ENTRYMASK) / PT_L2_ENTRYSZ;
+        const usize l2_count = ((kernsz + PT_L3_ENTRYMASK) & ~PT_L3_ENTRYMASK) / PT_L3_ENTRYSZ;
 
-                // *pd_e = (u64)pt_l1 | PT_FLAGS_RW;
-                for (usize j = 0; j < PT_ENTRIES; j++) {
-                        pt_l1->entries[j] = physbase | PT_FLAGS_RW;
-                        physbase += sizeof(PageTable);
+        PageTable *l3 = chk_pt_alloc(&pt_l4->entries[l4_entry_idx]);
+
+        PageTable *l1[l1_count];
+        PageTable *l2[l2_count];
+        pi_memset((void *)l1, 0, sizeof(l1));
+        pi_memset((void *)l2, 0, sizeof(l2));
+
+        for (usize i = 0; i < l2_count; i++) {
+                l2[i] = chk_pt_alloc(&l3->entries[page_l3_idx(koffs + (i * PT_L3_ENTRYSZ))]);
+                PageTable *pd = l2[i];
+
+                for (usize j = 0; j < l1_count; j++) {
+                        l1[j] = chk_pt_alloc(&pd->entries[page_l2_idx(koffs + (j * PT_L2_ENTRYSZ))]);
+                        PageTable *pt = l1[j];
+
+                        for (usize k = 0; k < PT_ENTRIES; k++) {
+                                u64 flags = PT_FLAG_PRESENT;
+                                void *addr = phys_to_virt_of(phy);
+
+                                if (addr < (void *)_begin || addr >= (void *)_after_ro)
+                                        flags |= PT_FLAG_WRITABLE;
+
+                                pt->entries[k] = phy | flags;
+                                phy += sizeof(PageTable);
+                        }
                 }
         }
 }
@@ -386,14 +354,14 @@ static void pt_init_temp_identmap(PageTable *pt_l4)
 
 /* pagetables are the bane of my existence. */
 _preinit_
-static void init_higher_half(struct bootparam_map_info *restrict info)
+static void init_higher_half(kboot_info_t *restrict info)
 {
         PageTable *pt_l4 = alloc_frame();
 
         pt_init_temp_identmap(pt_l4);
         pi_set_pagetable(pt_l4);
-        pt_init_kcode(pt_l4);
-        pt_init_dram_map(pt_l4, info);
+        pt_init_kcode(pt_l4, info);
+        pt_init_dram_map(pt_l4, &info->maps);
 }
 
 
@@ -455,6 +423,7 @@ static void pi_loop_mb2_mapentries(struct multiboot_tag_mmap *map, kboot_info_t 
                         i = &map_info->count_reclaimable;
                         map_info->entries_reclaimable[*i].base = ent->addr;
                         map_info->entries_reclaimable[*i].len = ent->len;
+                        map_info->ram_max += ent->len;
                         (*i)++;
                         
                         continue;
@@ -466,6 +435,8 @@ static void pi_loop_mb2_mapentries(struct multiboot_tag_mmap *map, kboot_info_t 
                 i = &map_info->count;
                 map_info->entries[*i].base = ent->addr;
                 map_info->entries[*i].len = ent->len;
+                map_info->ram_max += ent->len;
+                map_info->ram_usable += ent->len;
                 (*i)++;
         }
         
@@ -490,13 +461,18 @@ static void pi_parse_mb2(void *mbh, kboot_info_t *info)
         struct multiboot_tag_efi64 *restrict efi64 = (void *)find_mbt(mbh, MULTIBOOT_TAG_TYPE_EFI64);
         struct multiboot_tag_efi32 *restrict efi32 = (void *)find_mbt(mbh, MULTIBOOT_TAG_TYPE_EFI32);
 
-        if (map == MB2_TAG_ERR) { die(PREINIT_ERR_MB2_TAG); }
-        if (fb == MB2_TAG_ERR) { die(PREINIT_ERR_MB2_TAG); }
-        if (acpi == MB2_TAG_ERR) { die(PREINIT_ERR_MB2_TAG); }
+        struct multiboot_header_tag_entry_address *restrict entry = (void *)find_mbt(mbh, MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR);
 
+        if (map == MB2_TAG_ERR
+                || fb == MB2_TAG_ERR
+                || acpi == MB2_TAG_ERR
+                || entry == MB2_TAG_ERR) { 
+                die(PREINIT_ERR_MB2_TAG); 
+        }
 
         pi_loop_mb2_mapentries(map, info);
 
+        info->load_addr = entry->entry_addr;
 
         info->bootenv = (efi64 != MB2_TAG_ERR)
                 ? KERN_BOOT_TYPE_EFI64
@@ -504,8 +480,8 @@ static void pi_parse_mb2(void *mbh, kboot_info_t *info)
                         ? KERN_BOOT_TYPE_EFI32
                         : KERN_BOOT_TYPE_BIOS;
 
-
         struct multiboot_tag_framebuffer_common *fb_common = &fb->common;
+
         info->fb.virt = 0;
         info->fb.phys = fb_common->framebuffer_addr;
         info->fb.width = fb_common->framebuffer_width;
@@ -520,14 +496,12 @@ static void pi_parse_mb2(void *mbh, kboot_info_t *info)
 _preinit_ _noreturn_
 void start_kernel(void *mbh)
 {
-        kboot_info_t boot_info = {};
+        kboot_info_t boot_info;
+        pi_memset((void *)&boot_info, 0, sizeof(boot_info));
         pi_parse_mb2(mbh, &boot_info);
-        // struct multiboot_tag_mmap *map = (void *)find_mbt(mbh, MULTIBOOT_TAG_TYPE_MMAP);
-        // multiboot2_tmmap = map;
-        // mbt_framebuf = (void *)find_mbt(mbh, MULTIBOOT_TAG_TYPE_FRAMEBUFFER);
 
         alloc_init(&boot_info.maps);
-        init_higher_half(&boot_info.maps);
+        init_higher_half(&boot_info);
         buddy_handoff(&boot_info.maps);
         KERN_BOOT_INFO = boot_info;
         trampoline();

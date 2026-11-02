@@ -33,7 +33,11 @@ typedef struct {
                         u64 len;
                 } entries[64];
 
-                /* reclaimable entries specifically refer to ACPI reclaimable. */
+                /* 
+                 * reclaimable entries specifically refer to ACPI reclaimable. 
+                 * They will be removed and set to zero for all of them after
+                 * ACPI data is reclaimed, and added as normal entries.
+                 */
 
                 struct bootparam_map_entry {
                         u64 base;
@@ -46,6 +50,8 @@ typedef struct {
                 u8 count;
                 u8 count_reclaimable;
         } maps;
+
+        phys_addr_t load_addr;
 
         u64 acpi_rsdp_addr;
 

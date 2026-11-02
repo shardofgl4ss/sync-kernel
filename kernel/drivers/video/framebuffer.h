@@ -3,21 +3,40 @@
 
 #pragma once
 
+#include <bootparams.h>
+#include <macros.h>
 #include <types.h>
+
+
+
+typedef struct {
+        union {
+                u32 color;
+
+                struct {
+                        u8 red;
+                        u8 green;
+                        u8 blue;
+                        u8 alpha;
+                } _packed_;
+
+        } _packed_;
+} fb_rgba_color_t;
 
 typedef struct framebuffer framebuffer_t;
 
 typedef struct framebuf_ops {
-        void (*blit_pixel)(framebuffer_t *, u32 x, u32 y, u32 color);
-        void (*fill_rect)(framebuffer_t *, u32 x, u32 y, u32 w, u32 h, u32 color);
+        void (*blit_pixel)(framebuffer_t *, i32 x, i32 y, fb_rgba_color_t color);
+        void (*fill_rect)(framebuffer_t *, i32 x, i32 y, u32 w, u32 h, fb_rgba_color_t color);
         void (*scroll)(framebuffer_t *, u32 px_rows);
-        void (*flush)(framebuffer_t *, u32 x, u32 y, u32 w, u32 h);
+        void (*flush)(framebuffer_t *, i32 x, i32 y, u32 w, u32 h);
+        void (*clear)(framebuffer_t *);
 } fb_ops_t;
 
 
 
 typedef struct framebuffer {
-        byte *base;
+        volatile u32 *base;
         u32 width;
         u32 height;
         u32 pitch;
@@ -25,4 +44,7 @@ typedef struct framebuffer {
         fb_ops_t *ops;
         void *private;
 } framebuffer_t;
+
+
+extern framebuffer_t *fbcon_display_init(kboot_info_t *boot_info);
 
