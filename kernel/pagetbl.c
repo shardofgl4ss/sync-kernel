@@ -105,8 +105,6 @@ PageTable *return_pt_or_alloc(u64 *const restrict pte)
 // pagetables have given me an aneurysm
 phys_addr_t kpt_get_phys(void *vaddr)
 {
-        // vaddr = (void *)PAGE_ALIGNDOWN((u64)vaddr);
-
         constexpr u64 bmask_51_21 = BITRANGE_MASK(51, 21);
         constexpr u64 bmask_51_30 = BITRANGE_MASK(51, 30);
         constexpr u64 bmask_29_00 = BITRANGE_MASK(29, 00);
@@ -277,10 +275,6 @@ static void reallocate_bootmem_pages(const kboot_info_t *info)
                 : "r"(virt_to_phys_pm(pml4))
                 : "memory"
         );
-
-        // struct preinit_allocator *early_alloc = phys_to_virt_pm((void *)&preinit_pfa);
-        // physmem_pregion_t *region = phys_to_virt_pm(early_alloc->region[0]);
-        // const usize len = region->max_frames << 12;
 
         kbud_free_range(vbase, len);
 

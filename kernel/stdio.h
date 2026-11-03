@@ -3,12 +3,9 @@
 
 #pragma once
 
+#include <stdarg.h>
 #include <types.h>
 
-extern void putchar(u8 c);
-extern void puts(const char *str);
-
-extern void write(const char *str, int len);
-extern void clear_line(void);
-extern void clear_screen(void);
+extern isize vsnprintf(char *buf, usize size, const char *fmt, va_list args);
+extern isize snprintf(char *buf, usize size, const char *fmt, ...);
 

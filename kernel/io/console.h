@@ -14,11 +14,15 @@
 #define KCONSOLE_INIT_COLOR_BG  RGBA(0, 0, 0, 255)
 
 
-extern void kcon_clear();
-extern void kcon_puts(const char *restrict s);
-extern void kcon_putchar(char c);
+extern void kcon_init(void);
 extern void kcon_setcolor(fb_rgba_color_t fg, fb_rgba_color_t bg);
 extern void kcon_setfont(const kfont_t *font);
 extern void kcon_setframebuffer(framebuffer_t *fb);
-extern void kcon_init(void);;
+extern void kcon_clear();
+
+extern isize kcon_write(const char *restrict buf, usize len);
+
+
+extern void kcon_puts(const char *restrict s);
+extern void kcon_putchar(char c);
 

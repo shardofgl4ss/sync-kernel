@@ -18,7 +18,8 @@ C_SOURCES += $(DIR)/bootparams.c \
 	     $(DIR)/pagetbl.c \
 	     $(DIR)/panic.c \
 	     $(DIR)/rbtree.c \
-	     $(DIR)/stdio.c
+	     $(DIR)/stdio.c \
+	     $(DIR)/printk.c
 
 ASM_SOURCES += $(DIR)/entry.S \
 	       $(DIR)/gdt.S \

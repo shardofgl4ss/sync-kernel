@@ -4,7 +4,7 @@
 #include <io.h>
 #include <irq.h>
 #include <macros.h>
-#include <stdio.h>
+#include <printk.h>
 
 #include "panic.h"
 
@@ -13,9 +13,10 @@ _noreturn_
 void panic(char *panicmsg)
 {
 	// vga_setcolor(VGA_COLOR_RED, VGA_COLOR_BLACK);
-	puts(panicmsg);
-	puts("\n");
-	puts("\n----- KERNEL PANIC -----\n");
+
+	printk(0, panicmsg);
+	printk(0, "\n");
+	printk(0, "\n----- KERNEL PANIC -----\n");
 	x86_cli();
 	for (;;) {
 		x86_hlt();

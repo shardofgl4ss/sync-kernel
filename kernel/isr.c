@@ -39,108 +39,109 @@ void isr_init(void)
 }
 
 
+/* not implemented yet. */
 void handler_X86_ISR_DIV(void)
 {
-	puts("division by zero error!\n");
+	panic("division by zero error!\n");
 }
 void handler_X86_ISR_DEBUG(void)
 {
-	puts("debug interrupt\n");
+	panic("debug interrupt\n");
 }
 void handler_X86_ISR_NMI(void)
 {
-	puts("received NMI\n");
+	panic("received NMI\n");
 }
 void handler_X86_ISR_BRKP(void)
 {
-	puts("debug breakpoint\n");
+	panic("debug breakpoint\n");
 }
 void handler_X86_ISR_OVRFLW(void)
 {
-	puts("overflow error!\n");
+	panic("overflow error!\n");
 }
 void handler_X86_ISR_BOUND(void)
 {
-	puts("bound range error!\n");
+	panic("bound range error!\n");
 }
 void handler_X86_ISR_INV_OP(void)
 {
-	puts("invalid opcode error!\n");
+	panic("invalid opcode error!\n");
 }
 void handler_X86_ISR_DEV_NA(void)
 {
-	puts("device not available!\n");
+	panic("device not available!\n");
 }
 void handler_X86_ISR_DFAULT(void)
 {
-	puts("double fault!!!\n");
-	x86_cli();
-	for (;;)
-		x86_hlt();
+	panic("double fault!!!\n");
+	// x86_cli();
+	// for (;;)
+	// 	x86_hlt();
 }
 void handler_X86_ISR_OVERRUN(void)
 {
-	puts("coprocessor overrun error!\n");
+	panic("coprocessor overrun error!\n");
 }
 void handler_X86_ISR_INV_TSS(void)
 {
-	puts("invalid TSS error!\n");
+	panic("invalid TSS error!\n");
 }
 void handler_X86_ISR_NO_SEG(void)
 {
-	puts("no segment error!\n");
+	panic("no segment error!\n");
 }
 void handler_X86_ISR_STACK(void)
 {
-	puts("stack error!\n");
+	panic("stack error!\n");
 }
 void handler_X86_ISR_GP(void)
 {
-	puts("general purpose fault error!\n");
+	panic("general purpose fault error!\n");
 }
 void handler_X86_ISR_PAGE_FAULT(void)
 {
-	puts("page fault error!\n");
+	panic("page fault error!\n");
 }
 void handler_X86_ISR_INTEL(void)
 {
-	puts("mfw intel\n");
+	panic("mfw intel\n");
 }
 void handler_X86_ISR_FPUERR(void)
 {
-	puts("floating point error!\n");
+	panic("floating point error!\n");
 }
 void handler_X86_ISR_ALIGNCHK(void)
 {
-	puts("alignment check error!\n");
+	panic("alignment check error!\n");
 }
 void handler_X86_ISR_MACHINECHK(void)
 {
-	puts("machine check!\n");
+	panic("machine check!\n");
 }
 void handler_X86_ISR_AVX_FPE(void)
 {
-	puts("SSE/AVX floating point exception!\n");
+	panic("SSE/AVX floating point exception!\n");
 }
 void handler_X86_ISR_VIRT(void)
 {
-	puts("virtualization exception!\n");
+	panic("virtualization exception!\n");
 }
 void handler_X86_ISR_CPE(void)
 {
-	puts("control protection exception!\n");
+	panic("control protection exception!\n");
 }
 void handler_X86_ISR_HYPER_INJECT(void)
 {
-	puts("hypervsior injection\n");
+	panic("hypervsior injection\n");
 }
 void handler_X86_ISR_VM_COMM(void)
 {
-	puts("VM comm error!\n");
+	panic("VM comm error!\n");
 }
 void handler_X86_ISR_SECURITY(void)
 {
-	puts("security exception!\n");
+	panic("security exception!\n");
 }
 
 

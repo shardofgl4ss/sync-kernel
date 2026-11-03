@@ -5,32 +5,13 @@
 
 #include "stdio.h"
 
-// These are just wrappers to more easily swap them if needed later on.
-
-void putchar(u8 c)
+isize vsnprintf(char *buf, usize size, const char *fmt, va_list args)
 {
-        (void)c;
+        return 0;
 }
 
-
-void puts(const char *str)
+isize snprintf(char *buf, usize size, const char *fmt, ...)
 {
-        (void)str;
+        return 0;
 }
 
-
-void write(const char *str, const int len)
-{
-        (void)str;
-        (void)len;
-}
-
-
-void clear_line(void)
-{
-}
-
-
-void clear_screen(void)
-{
-}

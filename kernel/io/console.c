@@ -5,6 +5,7 @@
 #include <font.h>
 #include <framebuffer.h>
 #include <kctype.h>
+#include <kstring.h>
 #include <macros.h>
 #include <panic.h>
 #include <types.h>
@@ -34,44 +35,46 @@ struct kernel_console {
 
         u32 cx;
         u32 cy;
+
+        /* from the font, to avoid having to go through a ptr every reference. */
+        i32 cell_w;
+        i32 cell_h;
+        /* from the fb, to avoid having to go through a ptr every reference. */
+        u32 fb_w;
+        u32 fb_h;
 };
 
 struct kernel_console kconsole = {
-        .fb       = NULL,
-        .font     = &FONT_PX437_IBM_8X16,
         .color_fg = { .color = KCONSOLE_INIT_COLOR_FG },
         .color_bg = { .color = KCONSOLE_INIT_COLOR_BG },
-        .cx       = 0,
-        .cy       = 0,
 };
 
 
 
-static void console_scroll_by(u32 pixels)
+static void con_scroll_by(const u32 pixels)
 {
         fb_ops_t *o = kconsole.fb->ops;
-        if (o->scroll) o->scroll(kconsole.fb, pixels);
+        if (likely(o->scroll)) o->scroll(kconsole.fb, pixels);
         kconsole.cy -= pixels;
 }
 
 
 
-static inline void console_scroll()
+static inline void con_scroll()
 {
-        console_scroll_by(kconsole.font->pixel_h);
+        con_scroll_by(kconsole.cell_h);
 }
 
 
 /* fills a whole glyph w/h block with the background color.
- * If no glyph is provided, fills font->pixel_w and font->pixel_h */
+ * If no glyph is provided, fills cell_w and cell_h */
 _hot_
-static void console_fill_glyph(const font_glyph_t *_Nullable restrict glyph, u32 x, u32 y)
+static void con_fill_glyph(const font_glyph_t *_Nullable restrict glyph, u32 x, u32 y)
 {
-        const kfont_t *restrict font = kconsole.font;
         framebuffer_t *fb = kconsole.fb;
 
-        if (!fb->ops->blit_pixel) return;
-        if (!fb->ops->fill_rect) panic("console.c: refactor needed");
+        if (unlikely(!fb->ops->blit_pixel)) return;
+        if (unlikely(!fb->ops->fill_rect)) panic("console.c: refactor needed");
 
         i32 cx = (i32)x;
         i32 cy = (i32)y;
@@ -82,8 +85,8 @@ static void console_fill_glyph(const font_glyph_t *_Nullable restrict glyph, u32
         i32 g_h;
 
         if (!glyph) {
-                g_w = font->pixel_w;
-                g_h = font->pixel_h;
+                g_w = kconsole.cell_w;
+                g_h = kconsole.cell_h;
         } else {
                 g_w = glyph->width;
                 g_h = glyph->height;
@@ -94,12 +97,12 @@ static void console_fill_glyph(const font_glyph_t *_Nullable restrict glyph, u32
 
 /* uses transparent rendering, background is not written. use console_fill_glyph(). */
 _hot_
-static void console_draw_glyph(const font_glyph_t *restrict glyph, u32 x, u32 y)
+static void con_draw_glyph(const font_glyph_t *restrict glyph, u32 x, u32 y)
 {
         const kfont_t *font = kconsole.font;
         framebuffer_t *fb = kconsole.fb;
 
-        if (!fb->ops->blit_pixel) return;
+        if (unlikely(!fb->ops->blit_pixel)) return;
         const i32 by = (i32)y + font->baseline;
 
         auto const fn_blit = fb->ops->blit_pixel;
@@ -137,10 +140,10 @@ static inline void con_ctrl_newl(void)
 {
         con_ctrl_carriage_ret();
 
-        if (kconsole.cy + kconsole.font->pixel_h >= kconsole.fb->height)
-                console_scroll();
+        if (kconsole.cy + kconsole.cell_h >= kconsole.fb_h)
+                con_scroll();
         else
-                kconsole.cy += kconsole.font->pixel_h;
+                kconsole.cy += kconsole.cell_h;
 
         kconsole.cx = 0;
 }
@@ -149,7 +152,7 @@ static inline void con_ctrl_tab(void)
 {
         const font_glyph_t *glyph = &kconsole.font->font_glyphs[0];
         u32 gly_w = glyph->width ? glyph->width : glyph->x_advance;
-        if (!gly_w) gly_w = kconsole.font->pixel_w;
+        if (!gly_w) gly_w = kconsole.cell_w;
 
         u32 tab_w = gly_w * KCONSOLE_TABSTOP;
         if (!tab_w) return;
@@ -158,14 +161,32 @@ static inline void con_ctrl_tab(void)
 
         kconsole.cx += dist;
 
-        if (kconsole.cx >= kconsole.fb->width) {
+        if (kconsole.cx >= kconsole.fb_w) {
                 con_ctrl_newl();
         }
 }
 
+static inline void con_ctrl_backspace(void)
+{
+        const font_glyph_t *glyph = &kconsole.font->font_glyphs[0];
+        u32 gly_w = glyph->width ? glyph->width : glyph->x_advance;
+        if (!gly_w) gly_w = kconsole.cell_w;
+
+        if (kconsole.cx >= gly_w) {
+                kconsole.cx -= gly_w;
+        } else if (kconsole.cy >= (u32)kconsole.cell_h) {
+                kconsole.cy -= kconsole.cell_h;
+                kconsole.cx = kconsole.fb_w - gly_w;
+        } else {
+                return;
+        }
+
+        con_fill_glyph(glyph, kconsole.cx, kconsole.cy);
+}
+
 static inline void con_ctrl_clear(void)
 {
-        if (!kconsole.fb->ops->clear) return;
+        if (unlikely(!kconsole.fb->ops->clear)) return;
         kconsole.fb->ops->clear(kconsole.fb);
 
         kconsole.cx = 0;
@@ -173,7 +194,7 @@ static inline void con_ctrl_clear(void)
 }
 
 
-static void console_ascii_ctrl(const char c)
+static bool con_ascii_ctrl(const u8 c)
 {
         switch (c) {
         case '\r':
@@ -185,45 +206,62 @@ static void console_ascii_ctrl(const char c)
         case '\t':
                 con_ctrl_tab();
                 break;
-        default:
+        case '\b':
+                con_ctrl_backspace();
                 break;
+        default:
+                return false;
         }
+        return true;
 }
 
 
-static void console_write_cell_at(const char c, u32 x, u32 y)
+isize kcon_write(const char *restrict buf, usize len)
 {
         const kfont_t *font = kconsole.font;
+        u8 c;
 
-        if (kconsole.cy + kconsole.font->pixel_h >= kconsole.fb->height) {
-                con_ctrl_newl();
-                y -= kconsole.font->pixel_h;
+        if (unlikely(!buf)) return -1;
+
+        isize consumed = 0;
+
+        for (usize i = 0; i < len; i++) {
+                c = (u8)buf[i];
+
+                if (kconsole.cy >= kconsole.fb_h - kconsole.cell_h)
+                        con_ctrl_newl();
+                if (c < ' ' || c > '~') {
+                        consumed += con_ascii_ctrl(c);
+                        continue;
+                }
+
+                const font_glyph_t *restrict glyph = &font->font_glyphs[c - ' '];
+                con_draw_glyph(glyph, kconsole.cx, kconsole.cy);
+                consumed++;
+
+                kconsole.cx += glyph->x_advance;
+                if (kconsole.cx >= kconsole.fb_w)
+                        con_ctrl_newl();
         }
 
-        if (!isprint(c)) {
-                console_ascii_ctrl(c);
-                return;
-        }
-
-        const font_glyph_t *restrict glyph = &font->font_glyphs[c - ' '];
-        console_draw_glyph(glyph, x, y);
-
-        kconsole.cx += glyph->x_advance;
-        if (kconsole.cx >= kconsole.fb->width) {
-                con_ctrl_newl();
-        }
+        return consumed;
 }
 
 
 void kcon_setframebuffer(framebuffer_t *fb)
 {
-        if (fb) kconsole.fb = fb;
+        if (unlikely(!fb)) return;
+        kconsole.fb = fb;
+        kconsole.fb_w = fb->width;
+        kconsole.fb_h = fb->height;
 }
-
 
 void kcon_setfont(const kfont_t *font)
 {
-        if (font) kconsole.font = font;
+        if (unlikely(!font)) return;
+        kconsole.font = font;
+        kconsole.cell_w = font->pixel_w;
+        kconsole.cell_h = font->pixel_h;
 }
 
 void kcon_setcolor(const fb_rgba_color_t fg, const fb_rgba_color_t bg)
@@ -236,12 +274,14 @@ void kcon_setcolor(const fb_rgba_color_t fg, const fb_rgba_color_t bg)
 
 void kcon_putchar(const char c)
 {
-        console_write_cell_at(c, kconsole.cx, kconsole.cy);
+        kcon_write(&c, 1);
 }
 
 void kcon_puts(const char *restrict s)
 {
-        while (*s) kcon_putchar(*s++);
+        usize len = strlen(s);
+
+        kcon_write(s, len);
 }
 
 void kcon_clear()
@@ -255,6 +295,7 @@ void kcon_init(void)
 
         framebuffer_t *fb = fbcon_display_init(&KERN_BOOT_INFO);
         kcon_setframebuffer(fb);
+        kcon_setfont(&FONT_IBM_3270_16PX);
         kcon_puts("SYOS virtualized kernel booting...\n");
 }
 
