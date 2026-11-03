@@ -4,6 +4,8 @@
 #pragma once
 
 #include <types.h>
+#include <macros.h>
+
 
 enum GDT_BITS {
 	GDT_PRESENT    = 1 << 7,                /**< Loaded in memory.  */
@@ -31,8 +33,8 @@ enum GDT_BITS_FLAGS {
 
 static constexpr u8 KERNEL_PPT = GDT_PRESENT | GDT_DPL_RING0 | GDT_BIT_DESC_S;
 
-static constexpr u8 KERNEL_CS_PPT = KERNEL_PPT | GDT_BIT_CS_EXECUTABLE | GDT_BIT_CS_READABLE;
-static constexpr u8 KERNEL_DS_PPT = KERNEL_PPT | GDT_BIT_DS_WRITABLE;
+static constexpr u8 KERNEL_CS_PPT = KERNEL_PPT | GDT_BIT_CS_EXECUTABLE | GDT_BIT_CS_READABLE | GDT_ACCESSED;
+static constexpr u8 KERNEL_DS_PPT = KERNEL_PPT | GDT_BIT_DS_WRITABLE | GDT_ACCESSED;
 static constexpr u8 KERNEL_CS_FLAGS = GDT_BIT_FLAG_LONG_MODE << 4;
 
 
@@ -45,17 +47,17 @@ struct GDTEntry {
         byte ppt;
         byte hi_lim_flags;
         byte zero2;
-} __attribute__((packed));
+} _packed_;
 struct GDT64 {
         qword null;
 
         struct GDTEntry cs;
-} __attribute__((packed));
+} _packed_;
 
 struct GDT64_Descriptor {
         word limit;
         const struct GDT64 *base;
-} __attribute__((packed));
+} _packed_;
 
 
 extern const struct GDT64 KERN_GDT;

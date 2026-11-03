@@ -177,6 +177,7 @@ void x64_isr_handler(const isr_regs *restrict regs)
 {
 	if (table[regs->interrupt]) {
 		table[regs->interrupt]();
+                return;
 	}
 
 	panic("temporary");
