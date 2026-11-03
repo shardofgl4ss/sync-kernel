@@ -7,6 +7,7 @@
 
 
 extern size_t strlen(const char *str);
+extern size_t strnlen(const char *restrict str, size_t maxlen);
 
 extern void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 extern void *mempcpy(void *restrict dest, const void *restrict src, size_t n);
