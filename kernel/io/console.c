@@ -8,6 +8,7 @@
 #include <kstring.h>
 #include <macros.h>
 #include <panic.h>
+#include <printk.h>
 #include <types.h>
 
 #include "console.h"
@@ -296,6 +297,6 @@ void kcon_init(void)
         framebuffer_t *fb = fbcon_display_init(&KERN_BOOT_INFO);
         kcon_setframebuffer(fb);
         kcon_setfont(&FONT_IBM_3270_16PX);
-        kcon_puts("SYOS virtualized kernel booting...\n");
+        printk(KLOG_INFO, "SYOS virtualized kernel booting...\n");
 }
 

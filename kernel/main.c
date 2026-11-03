@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Sync Shard
 
+#define SYOS_VERSION    0
+#define SYOS_SUBVERSION 1
+
 #include <cpu_feats.h>
 #include <gdt.h>
 #include <idt.h>
@@ -11,15 +14,11 @@
 #include <macros.h>
 #include <pagetbl.h>
 #include <panic.h>
+#include <printk.h>
 #include <types.h>
 
 #include <io/console.h>
-#include <mm/buddy.h>
 #include <mm/kmalloc.h>
-#include <mm/slab.h>
-#include <mm/vma.h>
-#include <mm/vmalloc.h>
-#include <vga/vga.h>
 
 
 _noreturn_
@@ -39,7 +38,7 @@ void kernel_main(void)
         kcon_init();
         isr_init();
         idt_init();
-        kcon_puts("kernel reached idle!\n");
+        printk(KLOG_DEBUG, "SYOS kernel v%d.%d --- Booted, Idle Reached\n", SYOS_VERSION, SYOS_SUBVERSION);
 	kidle();
 }
 
