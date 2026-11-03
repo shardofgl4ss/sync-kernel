@@ -35,9 +35,9 @@ static inline kernel_vma_t *vma_struct_from_rb_node(struct rb_node *x) { return 
 int vma_insert(vma_region_t *vm_tree, kernel_vma_t *vma)
 {
         struct rb_node **link = &vm_tree->r_tree.root;
-        struct rb_node *parent = NULL;
+        struct rb_node *parent = nullptr;
 
-        while (*link != NULL) {
+        while (*link != nullptr) {
                 struct rb_node *current = *link;
                 kernel_vma_t *current_vm = vma_struct_from_rb_node(current);
 
@@ -74,7 +74,7 @@ void vma_remove(vma_region_t *vm_tree, kernel_vma_t *_Nullable vma)
 kernel_vma_t *vma_search(vma_region_t *vm_tree, virt_addr_t addr)
 {
         struct rb_node *node = vm_tree->r_tree.root;
-        kernel_vma_t *v = NULL;
+        kernel_vma_t *v = nullptr;
 
         while (node) {
                 v = vma_struct_from_rb_node(node);
@@ -147,7 +147,7 @@ kernel_vma_t *vma_alloc_area(vma_region_t *vm_tree, usize area_size, const vma_f
         kernel_vma_t *vma = VMA_INVALID_PTR;
         int ret = 1;
 
-        if (unlikely(root == NULL)) {
+        if (unlikely(root == nullptr)) {
                 ret = vma_assign_struct(&vma, vm_tree->r_start, area_size, flags);
                 goto done;
         }
@@ -155,7 +155,7 @@ kernel_vma_t *vma_alloc_area(vma_region_t *vm_tree, usize area_size, const vma_f
         struct rb_node *rb_lowest = rb_first(&vm_tree->r_tree);
         struct rb_node *rb_highest = rb_last(&vm_tree->r_tree);
 
-        if (unlikely(rb_lowest == NULL || rb_highest == NULL)) {
+        if (unlikely(rb_lowest == nullptr || rb_highest == nullptr)) {
                 return VMA_INVALID_PTR;
         }
 

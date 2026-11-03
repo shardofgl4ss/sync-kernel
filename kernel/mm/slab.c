@@ -64,7 +64,7 @@ static struct kslab *kslab_new_slab(kslab_cache_t *cache)
                 curr = next;
         }
 
-        *(void **)curr = NULL;
+        *(void **)curr = nullptr;
         
         return s;
 }
@@ -184,7 +184,7 @@ static void kslab_relink_node(struct kslab **from, struct kslab **to, struct ksl
         }
 
         if (*p) *p = target->next;
-        target->next = NULL;
+        target->next = nullptr;
         p = to;
 
         while (*p) {

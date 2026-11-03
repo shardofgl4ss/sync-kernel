@@ -66,7 +66,7 @@ void *memccpy(void *restrict dest,
 		d++;
 		s++;
 	}
-	return NULL;
+	return nullptr;
 }
 
 
@@ -161,7 +161,7 @@ char *strchr(const char *s, const int c)
 	                                 &remaining);
 	if (remaining != 0)
 		return (char *)(end - 1);
-	return NULL;
+	return nullptr;
 }
 
 
@@ -180,7 +180,7 @@ char *strrchr(const char *s, const int c)
 
 	if (remaining != 0)
 		return (char *)(end + 1);
-	return NULL;
+	return nullptr;
 }
 
 

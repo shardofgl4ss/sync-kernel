@@ -22,9 +22,9 @@ extern _Noreturn void kernel_main(void);
 _preinit_zeroed_
 struct preinit_allocator preinit_pfa = {};
 _preinit_zeroed_
-struct multiboot_tag_mmap *multiboot2_tmmap = NULL;
+struct multiboot_tag_mmap *multiboot2_tmmap = nullptr;
 _preinit_zeroed_
-struct multiboot_tag_framebuffer *mbt_framebuf = NULL;
+struct multiboot_tag_framebuffer *mbt_framebuf = nullptr;
 
 extern char _kphys_start[];
 extern char _kphys_end[];
@@ -179,7 +179,7 @@ static void pf_init_region(const usize region, const struct bootparam_map_entry 
 _preinit_
 static void alloc_init(struct bootparam_map_info *maps)
 {
-        if (unlikely(maps == NULL)) die(PREINIT_ERR_NULLMAP);
+        if (unlikely(maps == nullptr)) die(PREINIT_ERR_NULLMAP);
 
         pi_memset((void *)preinit_pfa.region, (u8)-1, sizeof(preinit_pfa.region));
 

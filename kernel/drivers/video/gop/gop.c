@@ -95,7 +95,7 @@ static fb_ops_t gop_funcs = {
         .fill_rect = &gop_fill_rect,
         .clear = &gop_clear,
         .scroll = &gop_scroll,
-        .flush = NULL,
+        .flush = nullptr,
 };
 
 
@@ -104,6 +104,6 @@ static fb_ops_t gop_funcs = {
 void gop_fb_init(framebuffer_t *restrict fb)
 {
         fb->ops = &gop_funcs;
-        fb->private = NULL;
+        fb->private = nullptr;
 }
 

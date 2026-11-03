@@ -53,13 +53,13 @@ PageTable *kpt_get_l2(void *vaddr, PageTable *_Nullable l3)
         if (l3) {
                 return phys_to_virt_pm(PT_REBASE(l3->entries[page_l3_idx(vaddr)]));
         }
-        PageTable *pdpt = kpt_get_l3(vaddr, NULL);
+        PageTable *pdpt = kpt_get_l3(vaddr, nullptr);
         u64 e = pdpt->entries[page_l3_idx(vaddr)];
 
         if (!(e & PT_FLAG_PRESENT))
                 return KPT_NOT_PRESENT;
         if (e & PT_FLAG_PAGESIZE)
-                return NULL;
+                return nullptr;
 
         return phys_to_virt_pm(PT_REBASE(e));
 }
@@ -68,13 +68,13 @@ PageTable *kpt_get_l1(void *vaddr, PageTable *_Nullable l2)
         if (l2) {
                 return phys_to_virt_pm(PT_REBASE(l2->entries[page_l2_idx(vaddr)]));
         }
-        PageTable *pd = kpt_get_l2(vaddr, NULL);
+        PageTable *pd = kpt_get_l2(vaddr, nullptr);
         u64 e = pd->entries[page_l2_idx(vaddr)];
 
         if (!(e & PT_FLAG_PRESENT))
                 return KPT_NOT_PRESENT;
         if (e & PT_FLAG_PAGESIZE)
-                return NULL;
+                return nullptr;
 
         return phys_to_virt_pm(PT_REBASE(e));
 }
@@ -160,7 +160,7 @@ void kpt_unmap_page(void *vaddr)
         usize valign = PAGE_ALIGNDOWN((uintptr_t)vaddr);
         void *v = (void *)valign;
 
-        PageTable *l1 = kpt_get_l1(v, NULL);
+        PageTable *l1 = kpt_get_l1(v, nullptr);
 
         volatile u64 *restrict pte = &l1->entries[page_l1_idx(v)];
 

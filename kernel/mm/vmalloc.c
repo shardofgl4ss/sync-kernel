@@ -180,8 +180,8 @@ void *ioremap(phys_addr_t phy, usize len, vma_flags_t flags)
 
         phys_addr_t aligned_phys = PAGE_ALIGNDOWN(phy);
 
-        kernel_vma_t *vma = vma_alloc_area(&vma_tree, aligned_size, flags, NULL);
-        if (vma == VMA_INVALID_PTR) return NULL;
+        kernel_vma_t *vma = vma_alloc_area(&vma_tree, aligned_size, flags, nullptr);
+        if (vma == VMA_INVALID_PTR) return nullptr;
 
         const page_ctx_t ctx = {
                 .paddr = aligned_phys,
@@ -226,7 +226,7 @@ void *ioremap_prot(phys_addr_t phy, usize len, vma_flags_t flags)
         (void)phy;
         (void)len;
         (void)flags;
-        return NULL;
+        return nullptr;
         // usize offs = phy & (PAGESIZE - 1);
         // usize aligned_size = PAGE_ALIGNUP(size + offs);
         //
@@ -240,7 +240,7 @@ void *ioremap_prot(phys_addr_t phy, usize len, vma_flags_t flags)
 void *iounmap(void *vaddr)
 {
         (void)vaddr;
-        return NULL;
+        return nullptr;
 }
 
 
@@ -250,7 +250,7 @@ void *iounmap(void *vaddr)
 void *kmap(phys_addr_t phy)
 {
         (void)phy;
-        return NULL;
+        return nullptr;
 }
 
 

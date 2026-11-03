@@ -19,7 +19,7 @@ struct rb_node *rb_getroot(struct rb_node *node)
 {
         struct rb_node *root = node;
 
-        while (root && root->parent != NULL) {
+        while (root && root->parent != nullptr) {
                 root = root->parent;
         }
 
@@ -32,13 +32,13 @@ void rb_lrotate(struct rb_tree *restrict tree, struct rb_node *x)
         struct rb_node *y = x->right;
         x->right = y->left;
 
-        if (y->left != NULL) {
+        if (y->left != nullptr) {
                 y->left->parent = x;
         }
 
         y->parent = x->parent;
 
-        if (x->parent == NULL) {
+        if (x->parent == nullptr) {
                 tree->root = y;
         } else if (x == x->parent->left) {
                 x->parent->left = y;
@@ -56,13 +56,13 @@ void rb_rrotate(struct rb_tree *restrict tree, struct rb_node *x)
         struct rb_node *y = x->left;
         x->left = y->right;
 
-        if (y->right != NULL) {
+        if (y->right != nullptr) {
                 y->right->parent = x;
         }
 
         y->parent = x->parent;
 
-        if (x->parent == NULL) {
+        if (x->parent == nullptr) {
                 tree->root = y;
         } else if (x == x->parent->right) {
                 x->parent->right = y;
@@ -87,7 +87,7 @@ void rb_fixins(struct rb_tree *restrict tree, struct rb_node *x)
                         ? grandparent->right
                         : grandparent->left;
 
-                if (big_unc != NULL && big_unc->color == RB_RED) {
+                if (big_unc != nullptr && big_unc->color == RB_RED) {
                         parent->color = RB_BLACK;
                         big_unc->color = RB_BLACK;
 
@@ -186,8 +186,8 @@ void rb_insert(struct rb_tree *tree, struct rb_node *restrict node, struct rb_no
 {
         if (!node) return;
 
-        node->left = NULL;
-        node->right = NULL;
+        node->left = nullptr;
+        node->right = nullptr;
         node->parent = parent;
         node->color = RB_RED;
 
@@ -198,7 +198,7 @@ void rb_insert(struct rb_tree *tree, struct rb_node *restrict node, struct rb_no
 
 struct rb_node *rb_remove(struct rb_tree *restrict tree, struct rb_node *node)
 {
-        if (!node) return NULL;
+        if (!node) return nullptr;
 
         struct rb_node *x = {};
         struct rb_node **parent_ptr_node;
@@ -214,7 +214,7 @@ struct rb_node *rb_remove(struct rb_tree *restrict tree, struct rb_node *node)
         if (!node->left && !node->right) {
                 // zero children.
 
-                *parent_ptr_node = NULL;
+                *parent_ptr_node = nullptr;
 
                 if (node->color == RB_BLACK) {
                         rb_fixdel(tree, node);
@@ -258,21 +258,21 @@ struct rb_node *rb_remove(struct rb_tree *restrict tree, struct rb_node *node)
 struct rb_node *rb_first(const struct rb_tree *restrict tree)
 {
         struct rb_node *node = tree->root;
-        if (!node) return NULL;
+        if (!node) return nullptr;
         while (node->left) node = node->left;
         return node;
 }
 struct rb_node *rb_last(const struct rb_tree *restrict tree)
 {
         struct rb_node *node = tree->root;
-        if (!node) return NULL;
+        if (!node) return nullptr;
         while (node->right) node = node->right;
         return node;
 
 }
 struct rb_node *rb_next(struct rb_node *node)
 {
-        if (!node) return NULL;
+        if (!node) return nullptr;
         if (node->right) {
                 node = node->right;
                 while (node->left) node = node->left;
@@ -290,7 +290,7 @@ struct rb_node *rb_next(struct rb_node *node)
 }
 struct rb_node *rb_prev(struct rb_node *node)
 {
-        if (!node) return NULL;
+        if (!node) return nullptr;
         if (node->left) {
                 node = node->left;
                 while (node->right) node = node->right;

@@ -294,7 +294,7 @@ static bool kbud_pop(slave_buddy_t *slave, phys_addr_t phy, bud_order_t order)
                 cur = &(*cur)->next;
         }
 
-        ASSERT(*cur != NULL, "buddy list corruption detected! free addr not found in free list");
+        ASSERT(*cur != nullptr, "buddy list corruption detected! free addr not found in free list");
 
         *cur = (*cur)->next;
         slave->order_blk_cnt[order]--;
